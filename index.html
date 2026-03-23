@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>阿梅工具箱</title>
+<style>
+  :root{
+    --bg:#f3f4f6;
+    --card:#ffffff;
+    --border:#e5e7eb;
+    --text:rgba(0,0,0,.78);
+    --muted:rgba(0,0,0,.45);
+    --accent: rgb(110, 180, 135);
+    --accentSoft: rgba(110, 180, 135, .12);
+    --purple: rgb(167, 142, 220);
+    --purpleSoft: rgba(167, 142, 220, .16);
+    --shadow-sm: 0 10px 28px rgba(0,0,0,.08);
+    --r:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "PingFang TC","Microsoft JhengHei", Arial;
+  }
+
+  .app{
+    display:grid;
+    grid-template-columns: 280px 1fr;
+    gap: 14px;
+    padding: 14px;
+    height: 100vh;
+  }
+  @media (max-width: 900px){
+    .app{ grid-template-columns: 1fr; height:auto; }
+  }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .sidebar{
+    padding: 12px;
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .list{
+    padding: 10px;
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+  }
+
+  .preview{
+    padding: 12px;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    overflow:hidden;
+  }
+
+  iframe{
+    width:100%;
+    height: 100%;
+    border: 0;
+    border-radius: 16px;
+    background: #fff;
+  }
+
+  /* ===== 救援：左側按鈕 + 首頁卡片（不吃 class 也能救） ===== */
+  .sidebar, .left, .side, .apps, .nav {
+    border-radius: 18px;
+  }
+
+  .sidebar button,
+  .left button,
+  .side button,
+  .apps button,
+  .nav button,
+  .toolList button{
+    width: 100%;
+    text-align: left;
+    border: 1px solid rgba(0,0,0,.10);
+    background: rgba(255,255,255,.88);
+    border-radius: 16px;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-weight: 900;
+    color: rgba(0,0,0,.78);
+    box-shadow: 0 10px 26px rgba(0,0,0,.06);
+    transition: transform .08s ease, background .15s ease;
+  }
+
+  .sidebar button:hover,
+  .left button:hover,
+  .side button:hover,
+  .apps button:hover,
+  .nav button:hover,
+  .toolList button:hover{
+    background: rgba(249,250,251,1);
+    transform: translateY(-1px);
+  }
+
+  .home button,
+  .home .card,
+  .homeCard,
+  .homePanel,
+  #home button,
+  #home .card{
+    border-radius: 18px;
+  }
+
+  .sidebar button span,
+  .left button span,
+  .side button span,
+  .apps button span,
+  .nav button span{
+    display: inline-block;
+    margin-left: 8px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(84,116,52,.18);
+    background: rgba(84,116,52,.10);
+    color: rgba(0,0,0,.60);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  /* === Sidebar (match the screenshot style) === */
+  .side-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding: 6px 4px 2px;}
+  .side-title{padding: 10px 12px;border-bottom:0;font-size: 22px;font-weight: 950; letter-spacing:.2px;}
+ .side-gear{
+  width: 32px !important;
+  min-width: 32px;
+  height: 32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  padding:0 !important;
+  flex-shrink:0;
+}
+.side-gear:hover{
+  background: rgba(110,180,135,.18);
+}
+
+
+  .side-search{width:100%;border:1px solid var(--border);border-radius: 14px;padding: 10px 12px;outline:none;background:#fff;font-weight: 700;color: rgba(0,0,0,.72);}
+  .side-search:focus{border-color: rgba(110,180,135,.45);box-shadow: 0 0 0 4px rgba(110,180,135,.12);}
+
+  .side-section{padding: 4px 12px 0;font-size: 13px;font-weight: 900;color: rgba(0,0,0,.60);}
+
+  /* tool list buttons */
+  .list{padding: 6px 10px 10px;gap:10px;}
+  .toolbtn{
+    display:flex;align-items:center;justify-content:space-between;gap: 10px;
+    border: 1px solid rgba(0,0,0,.10);
+    background: rgba(255,255,255,.90);
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 10px 26px rgba(0,0,0,.06);
+    transition: transform .08s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .toolbtn:hover{background: rgba(249,250,251,1);transform: translateY(-1px);}
+  .toolbtn.active{
+    border-color: rgba(110,180,135,.75);
+    background: rgba(110,180,135,.08);
+    box-shadow: 0 12px 28px rgba(110,180,135,.12);
+  }
+  .toolname{font-weight: 950;color: rgba(0,0,0,.82);}
+  .tooldesc{font-size: 12px;color: rgba(0,0,0,.45);margin-top: 2px;}
+  .pill{
+    border: 1px solid rgba(110,180,135,.18);
+    background: rgba(110,180,135,.10);
+    color: rgba(0,0,0,.65);
+    font-size: 12px;
+    font-weight: 950;
+    padding: 8px 12px;
+    border-radius: 999px;
+    flex:0 0 auto;
+    white-space: nowrap;
+  }
+
+  .side-foot{padding: 0 12px 12px;}
+  .side-note{font-size:12px;color:var(--muted);line-height:1.5;}
+
+  /* remove rescue style side effects on .toolbtn */
+  .sidebar button span{margin-left:0;}
+</style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="card sidebar">
+      <div class="side-head">
+        <div class="side-title">阿梅工具箱</div>
+        <button class="side-gear" type="button" title="回到首頁" onclick="showHome()">耶</button>
+
+      </div>
+
+      <input class="side-search" id="toolSearch" type="search" placeholder="搜尋工具..." oninput="filterTools()" />
+      <div class="side-section">工具列表</div>
+
+      <div class="list" id="toolList">
+        <button class="toolbtn" data-file="委託清單.html" onclick="openTool('委託清單.html')">
+          <div>
+            <div class="toolname">委託清單</div>
+            <div class="tooldesc">快畫</div>
+          </div>
+          <div class="pill">管理</div>
+        </button>
+
+        <button class="toolbtn" data-file="該畫畫了.html" onclick="openTool('該畫畫了.html')">
+          <div>
+            <div class="toolname">畫畫清單</div>
+            <div class="tooldesc">快畫</div>
+          </div>
+          <div class="pill">管理</div>
+        </button>
+
+        <button class="toolbtn" data-file="阿梅備忘錄.html" onclick="openTool('阿梅備忘錄.html')">
+          <div>
+            <div class="toolname">阿梅備忘錄</div>
+            <div class="tooldesc">分類待辦事項</div>
+          </div>
+          <div class="pill">管理</div>
+        </button>
+
+        <button class="toolbtn" data-file="便籤.html" onclick="openTool('便籤.html')">
+          <div>
+            <div class="toolname">便條紙</div>
+            <div class="tooldesc">分類待辦事項</div>
+          </div>
+          <div class="pill">管理</div>
+        </button>
+
+
+        <button class="toolbtn" data-file="阿梅浮水印工具.html" onclick="openTool('阿梅浮水印工具.html')">
+          <div>
+            <div class="toolname">浮水印工具</div>
+            <div class="tooldesc">圖片浮水印</div>
+          </div>
+          <div class="pill">圖像</div>
+        </button>
+
+        <button class="toolbtn" data-file="長圖拼接.html" onclick="openTool('長圖拼接.html')">
+          <div>
+            <div class="toolname">拼長圖工具</div>
+            <div class="tooldesc">固定寬度拼接圖片</div>
+          </div>
+          <div class="pill">圖像</div>
+        </button>
+
+        <button class="toolbtn" data-file="文轉圖.html" onclick="openTool('文轉圖.html')">
+          <div>
+            <div class="toolname">文轉圖</div>
+            <div class="tooldesc">長文字轉圖片</div>
+          </div>
+          <div class="pill">圖像</div>
+        </button>
+      </div>
+
+      <div class="side-foot">
+        <div class="side-note">小提醒：請把各工具 html 放同一資料夾，工具箱才能正常打開。</div>
+      </div>
+    </div>
+
+    <div class="card preview">
+      <!-- ✅ 已移除：pomoStrip -->
+      <iframe id="toolFrame" src=""></iframe>
+    </div>
+  </div>
+
+<script>
+  function setActive(file){
+    document.querySelectorAll('.toolbtn').forEach(btn=>{
+      const f = btn.getAttribute('data-file');
+      btn.classList.toggle('active', f === file);
+    });
+  }
+
+  function openTool(src){
+    const frame = document.getElementById('toolFrame');
+    frame.removeAttribute('srcdoc');
+    frame.src = src;
+    setActive(src);
+  }
+
+  function showHome(){
+    const frame = document.getElementById('toolFrame');
+    frame.removeAttribute('src');
+
+    const quotes = [
+      "慢慢來也沒關係，但不要停下來。",
+      "今天做一點點，明天就少一點點壓力。",
+      "你不是拖延，你是在蓄力。",
+      "先把第一筆線畫下去，後面就順了。"
+    ];
+    const q = quotes[Math.floor(Math.random()*quotes.length)];
+
+    const doc = `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HOME</title><style>
+      body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",Arial;background:#f3f4f6;color:rgba(0,0,0,.78);}
+      .card{max-width:860px;margin:22px auto;padding:18px;border-radius:18px;background:#fff;border:1px solid #e5e7eb;box-shadow:0 10px 28px rgba(0,0,0,.08);}
+      h2{margin:0 0 8px;font-size:18px;}
+      p{margin:0;color:rgba(0,0,0,.55);line-height:1.6;}
+      .q{margin-top:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(110,180,135,.25);background:rgba(110,180,135,.08);font-weight:800;color:rgba(0,0,0,.72);}
+      .tag{display:inline-block;margin-left:8px;padding:3px 10px;border-radius:999px;border:1px solid rgba(167,142,220,.28);background:rgba(167,142,220,.14);font-weight:900;font-size:12px;color:rgba(0,0,0,.70);}
+      .hint{margin-top:12px;padding:10px 12px;border-radius:14px;border:1px dashed rgba(167,142,220,.35);background:rgba(167,142,220,.10);color:rgba(0,0,0,.62);font-weight:800;font-size:12px;}
+    </style></head><body>
+      <div class="card">
+        <h2>阿梅工具箱 <span class="tag">HOME</span></h2>
+        <p>今天也一起把事情做完吧。</p>
+        <div class="q">${q}</div>
+        <div class="hint">左邊點工具就會在這裡打開。</div>
+      </div>
+    </body></html>`;
+
+    frame.srcdoc = doc;
+    setActive('__HOME__');
+  }
+
+  function filterTools(){
+    const q = (document.getElementById('toolSearch').value || '').trim().toLowerCase();
+    document.querySelectorAll('#toolList .toolbtn').forEach(btn=>{
+      const txt = btn.innerText.toLowerCase();
+      btn.style.display = (!q || txt.includes(q)) ? '' : 'none';
+    });
+  }
+
+  window.addEventListener('load', ()=>{ showHome(); });
+</script>
+
+</body>
+</html>
