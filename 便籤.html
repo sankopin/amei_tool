@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>阿梅便籤工具</title>
+<style>
+  :root{
+    --purple: rgb(167,142,220);
+    --green: rgb(110,180,135);
+  }
+  body{
+    margin:0;
+    background:#f5f5f5;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  .topbar{
+    padding:16px 18px 0;
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .add-btn{
+    padding:10px 14px;
+    background: rgba(167,142,220,.95);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  }
+  .add-btn:hover{ background: rgba(167,142,220,1); }
+
+  .hint{
+    color: rgba(0,0,0,.55);
+    font-size: 12px;
+    font-weight:700;
+  }
+
+  /* Board */
+  .board{
+    position: relative;
+    height: calc(100vh - 64px);
+    margin: 10px 14px 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(0,0,0,.08);
+    background: #fafafa;
+    overflow: auto;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+  }
+
+  /* Notes */
+  .note{
+    position: absolute;
+    width: 260px;
+    height: 220px;
+    background: #fffde8;
+    border: 1px solid #e6dca3;
+    border-radius: 14px;
+    box-shadow: 0 10px 26px rgba(0,0,0,.10);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    resize: both;              /* ✅ 自由縮放 */
+    overflow: hidden;          /* 讓 resize 角落乾淨 */
+  }
+
+  .note:focus-within{ outline: 2px solid rgba(167,142,220,.35); outline-offset: 1px; }
+
+  .note-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding: 2px 2px 8px;
+    cursor: grab;              /* ✅ 可拖曳：抓取感 */
+    user-select: none;
+  }
+  .note-header:active{ cursor: grabbing; }
+
+  .ctl{
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 10px;
+    padding: 5px 8px;
+    background: rgba(255,255,255,.75);
+    font-weight: 800;
+    font-size: 12px;
+  }
+  .ctl:focus{ outline: none; box-shadow: 0 0 0 3px rgba(110,180,135,.18); }
+
+  .ctl-label{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(0,0,0,.55);
+    margin-left: 2px;
+  }
+
+  .spacer{ flex: 1; }
+
+  /* 右上角刪除 X */
+  .del-x{
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.85);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight: 900;
+    color: rgba(0,0,0,.55);
+    line-height: 1;
+  }
+  .del-x:hover{
+    border-color: rgba(164,43,57,.35);
+    background: rgba(164,43,57,.10);
+    color: rgb(164,43,57);
+  }
+
+  .note textarea{
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    line-height: 1.55;
+    padding: 4px 6px 6px;
+    box-sizing: border-box;
+  }
+  .note textarea:focus{ outline:none; }
+
+  /* 讓 color input 看起來像小 pill */
+  input[type="color"].ctl{
+    padding: 0;
+    width: 34px;
+    height: 30px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  input[type="color"].ctl::-webkit-color-swatch-wrapper{ padding:0; }
+  input[type="color"].ctl::-webkit-color-swatch{ border:none; border-radius: 10px; }
+  /* ✅ 清單模式 */
+  .list-wrap{
+    flex: 1;
+    overflow: auto;
+    padding: 4px 6px 6px;
+  }
+
+  .list-item{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    padding: 4px 2px;
+  }
+
+  .list-item input[type="checkbox"]{
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--purple);
+    cursor: pointer;
+  }
+
+  .list-text{
+    flex: 1;
+    min-height: 22px;
+    outline: none;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .list-item.done .list-text{
+    text-decoration: line-through;
+    opacity: .55;
+  }
+
+  .list-add{
+    border: 1px dashed rgba(0,0,0,.2);
+    border-radius: 10px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,.6);
+    font-weight: 900;
+    font-size: 12px;
+    cursor: pointer;
+    color: rgba(0,0,0,.55);
+  }
+  .list-add:hover{
+    border-color: rgba(167,142,220,.55);
+    color: rgba(167,142,220,1);
+  }
+
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <button class="add-btn" id="addNoteBtn" type="button">＋ 新增便籤</button>
+    <div class="hint">拖曳：抓住上方工具列｜縮放：右下角拖曳｜顏色：T=文字、P=紙張</div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var board = document.getElementById("board");
+  var addBtn = document.getElementById("addNoteBtn");
+  var STORAGE_KEY = "ame_sticky_notes_v2";
+
+  var notes = loadNotes();
+  var zTop = 1;
+  for (var i = 0; i < notes.length; i++) zTop = Math.max(zTop, notes[i].z || 1);
+
+  var drag = null;
+  var roMap = Object.create(null);
+
+  function uid() {
+    return String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+  }
+
+  function loadNotes() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      var out = [];
+      for (var i = 0; i < arr.length; i++) {
+        var n = arr[i] || {};
+        out.push({
+          id: n.id || uid(),
+          text: n.text || "",
+          size: Number(n.size) || 16,
+          color: n.color || "#000000",
+          paper: n.paper || "#E3FADC",
+          x: isFinite(n.x) ? Number(n.x) : 24,
+          y: isFinite(n.y) ? Number(n.y) : 24,
+          w: isFinite(n.w) ? Number(n.w) : 260,
+          h: isFinite(n.h) ? Number(n.h) : 220,
+          z: Number(n.z) || 1,
+          mode: n.mode || "text",          // "text" | "list"
+          items: Array.isArray(n.items) ? n.items : []  // [{t:"", done:false}]
+
+        });
+      }
+      return out;
+    } catch (e) {
+      console.warn("loadNotes failed", e);
+      return [];
+    }
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  }
+
+  function escapeHtml(s) {
+    s = String(s == null ? "" : s);
+    return s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/\n/g, " ");
+  }
+
+  // 讓 querySelector 能安全使用 data-id（避免某些字元造成選擇器報錯）
+  function cssEscape(s) {
+    s = String(s == null ? "" : s);
+    if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(s);
+    // 退而求其次：轉義 CSS 選擇器中常見的危險字元
+    return s.replace(/[^a-zA-Z0-9_-]/g, function (ch) {
+      return "\\" + ch;
+    });
+  }
+
+
+  function findNote(id) {
+    for (var i = 0; i < notes.length; i++) if (notes[i].id === id) return notes[i];
+    return null;
+  }
+
+  function bringToFront(id) {
+    var n = findNote(id);
+    if (!n) return;
+    zTop += 1;
+    n.z = zTop;
+    save();
+    var el = board.querySelector('.note[data-id="' + cssEsc(id) + '"]');
+    if (el) el.style.zIndex = String(n.z);
+  }
+
+  function cssEsc(s) {
+    // 安全 CSS selector escape（保守版）
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+  }
+
+  window.addNote = function () {
+    var id = uid();
+    zTop += 1;
+
+    var n = {
+      id: id,
+      text: "",
+      size: 16,
+      color: "#000000",
+      paper: "#E3FADC",
+      x: 24 + (notes.length % 6) * 28,
+      y: 24 + (notes.length % 6) * 18,
+      w: 260,
+      h: 220,
+      z: zTop
+    };
+
+    notes.push(n);
+    save();
+
+    // ✅ 只新增這一張，不整個 render（避免閃爍、也不會把尚未寫回的尺寸重置）
+    var el = buildNoteEl(n);
+    board.appendChild(el);
+
+    // 直接把焦點放到新便籤
+    var ta = el.querySelector("textarea");
+    if (ta) ta.focus();
+  };
+
+  window.editText = function (id, t) {
+    var n = findNote(id);
+    if (!n) return;
+    n.text = t;
+    save();
+  };
+
+  window.changeSize = function (id, v) {
+    var n = findNote(id);
+    if (!n) return;
+    n.size = Number(v) || 16;
+
+    var el = board.querySelector('.note[data-id="' + cssEscape(id) + '"]');
+    if (el) {
+      var ta = el.querySelector("textarea");
+      if (ta) ta.style.fontSize = n.size + "px";
+    }
+    save();
+  };
+
+  window.changeTextColor = function (id, c) {
+    var n = findNote(id);
+    if (!n) return;
+    n.color = c;
+
+    var el = board.querySelector('.note[data-id="' + cssEscape(id) + '"]');
+    if (el) {
+      var ta = el.querySelector("textarea");
+      if (ta) ta.style.color = c;
+    }
+
+    save();
+  };
+
+  window.changePaper = function (id, c) {
+    var n = findNote(id);
+    if (!n) return;
+    n.paper = c;
+
+    var el = board.querySelector('.note[data-id="' + cssEscape(id) + '"]');
+    if (el) el.style.background = c;
+
+    save();
+  };
+
+  window.delNote = function (id) {
+    if (!confirm("確定刪除便籤？")) return;
+
+    // 先移除資料
+    var out = [];
+    for (var i = 0; i < notes.length; i++) if (notes[i].id !== id) out.push(notes[i]);
+    notes = out;
+
+    // 再移除 DOM（不整個 render）
+    var el = board.querySelector('.note[data-id="' + cssEscape(id) + '"]');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+
+    // ResizeObserver 清掉
+    if (roMap[id]) {
+      try { roMap[id].disconnect(); } catch (e) {}
+      delete roMap[id];
+    }
+
+    save();
+  };
+  window.toggleMode = function(id){
+    var n = findNote(id);
+    if(!n) return;
+
+    if(n.mode === "text"){
+      // text -> list：用原本文字每行拆成一個 item
+      var lines = String(n.text || "").split(/\r?\n/);
+      var items = [];
+      for(var i=0;i<lines.length;i++){
+        var t = lines[i].trimEnd();
+        if(t.trim() === "") continue;
+        items.push({ t: t, done: false });
+      }
+      // 若完全空，就給一個空 item
+      if(items.length === 0) items.push({ t:"", done:false });
+
+      n.items = items;
+      n.mode = "list";
+    }else{
+      // list -> text：把 items 合回多行文字
+      var out = [];
+      for(var j=0;j<(n.items||[]).length;j++){
+        out.push(String(n.items[j].t || ""));
+      }
+      n.text = out.join("\n");
+      n.mode = "text";
+    }
+
+    save();
+
+    // 只重建這張 DOM（不整個 render）
+    var elOld = board.querySelector('.note[data-id="' + cssEscape(id) + '"]');
+    if(elOld && elOld.parentNode){
+      var z = elOld.style.zIndex;
+      var x = elOld.style.left, y = elOld.style.top, w = elOld.style.width, h = elOld.style.height, bg = elOld.style.background;
+      elOld.parentNode.removeChild(elOld);
+
+      var elNew = buildNoteEl(n);
+      elNew.style.zIndex = z;
+      elNew.style.left = x; elNew.style.top = y; elNew.style.width = w; elNew.style.height = h; elNew.style.background = bg;
+      board.appendChild(elNew);
+    }
+  };
+
+  window.toggleItemDone = function(id, idx, checked){
+    var n = findNote(id);
+    if(!n || !n.items || !n.items[idx]) return;
+    n.items[idx].done = !!checked;
+    save();
+  };
+
+  window.editItemText = function(id, idx, text){
+    var n = findNote(id);
+    if(!n || !n.items || !n.items[idx]) return;
+    n.items[idx].t = text;
+    save();
+  };
+
+  window.addItem = function(id){
+    var n = findNote(id);
+    if(!n) return;
+    if(!Array.isArray(n.items)) n.items = [];
+    n.items.push({ t:"", done:false });
+    save();
+
+    // 直接在 DOM 追加一列
+    var el = board.querySelector('.note[data-id="' + cssEscape(id) + '"]');
+    if(!el) return;
+    var wrap = el.querySelector(".list-wrap");
+    if(!wrap) return;
+
+    var idx = n.items.length - 1;
+    var row = buildListRow(n, idx);
+    wrap.insertBefore(row, wrap.querySelector(".list-add") || null);
+
+    // focus 新增那格
+    var edt = row.querySelector(".list-text");
+    if(edt) edt.focus();
+  };
+
+
+  function buildNoteEl(n) {
+    var el = document.createElement("div");
+    el.className = "note";
+    el.dataset.id = n.id;
+
+    el.style.left = n.x + "px";
+    el.style.top = n.y + "px";
+    el.style.width = n.w + "px";
+    el.style.height = n.h + "px";
+    el.style.background = n.paper;
+    el.style.zIndex = String(n.z || 1);
+
+    el.innerHTML =
+      '<div class="note-header" data-drag="1">' +
+        '<span class="ctl-label">字</span>' +
+        '<select class="ctl" onchange="changeSize(\'' + escapeAttr(n.id) + '\', this.value)">' +
+          '<option value="14"' + (n.size === 14 ? " selected" : "") + '>小</option>' +
+          '<option value="16"' + (n.size === 16 ? " selected" : "") + '>中</option>' +
+          '<option value="20"' + (n.size === 20 ? " selected" : "") + '>大</option>' +
+          '<option value="26"' + (n.size === 26 ? " selected" : "") + '>特大</option>' +
+        "</select>" +
+        '<span class="ctl-label">T</span>' +
+        '<input class="ctl" type="color" value="' + escapeAttr(n.color) + '" ' +
+          'oninput="changeTextColor(\'' + escapeAttr(n.id) + '\', this.value)" title="文字顏色">' +
+        '<span class="ctl-label">P</span>' +
+        '<input class="ctl" type="color" value="' + escapeAttr(n.paper) + '" ' +
+          'oninput="changePaper(\'' + escapeAttr(n.id) + '\', this.value)" title="紙張顏色">' +
+        '<button class="ctl" type="button" onclick="toggleMode(\'' + escapeAttr(n.id) + '\')" title="切換清單/文字">☑</button>' +
+        '<div class="spacer"></div>' +
+        '<button class="del-x" type="button" onclick="delNote(\'' + escapeAttr(n.id) + '\')" title="刪除">×</button>' +
+            "</div>";
+
+    if((n.mode || "text") === "list"){
+      // 清單模式
+      el.innerHTML += '<div class="list-wrap"></div>';
+    }else{
+      // 文字模式
+      el.innerHTML +=
+        '<textarea placeholder="寫點什麼…" ' +
+          'oninput="editText(\'' + escapeAttr(n.id) + '\', this.value)" ' +
+          'style="font-size:' + n.size + 'px; color:' + escapeAttr(n.color) + '">' +
+          escapeHtml(n.text) +
+        "</textarea>";
+    }
+
+    // 點到卡片本體就置頂
+    el.addEventListener("pointerdown", function () { bringToFront(n.id); });
+
+    // 只有點到 header 的空白處才拖曳（點到控制元件不要拖曳）
+    var header = el.querySelector('[data-drag="1"]');
+    header.addEventListener("pointerdown", function (ev) {
+      if (ev.target.closest("select, input, button")) return;
+      startDrag(ev, n.id, el);
+    });
+      if((n.mode || "text") === "list"){
+      renderListInto(el, n);
+    }
+
+    attachResizeObserver(el, n.id);
+    return el;
+  }
+  function buildListRow(n, idx){
+    var it = (n.items && n.items[idx]) ? n.items[idx] : {t:"", done:false};
+
+    var row = document.createElement("div");
+    row.className = "list-item" + (it.done ? " done" : "");
+    row.innerHTML =
+      '<input type="checkbox" ' + (it.done ? "checked" : "") + '>' +
+      '<div class="list-text" contenteditable="true"></div>';
+
+    // checkbox
+    var cb = row.querySelector("input[type=checkbox]");
+    cb.addEventListener("change", function(){
+      row.classList.toggle("done", cb.checked);
+      window.toggleItemDone(n.id, idx, cb.checked);
+    });
+
+    // text
+    var txt = row.querySelector(".list-text");
+    txt.style.fontSize = (n.size || 16) + "px";
+    txt.style.color = (n.color || "#000");
+    txt.textContent = it.t || "";
+
+    txt.addEventListener("input", function(){
+      window.editItemText(n.id, idx, txt.textContent);
+    });
+
+    // Enter：新增下一項（像備忘錄）
+    txt.addEventListener("keydown", function(e){
+      if(e.key === "Enter"){
+        e.preventDefault();
+        window.addItem(n.id);
+      }
+      // Backspace：空白行就刪除這項（留至少一項）
+      if(e.key === "Backspace" && (txt.textContent || "").trim() === ""){
+        var note = findNote(n.id);
+        if(note && Array.isArray(note.items) && note.items.length > 1){
+          note.items.splice(idx,1);
+          save();
+          // 重新渲染整張清單（避免 index 對不上）
+          var wrap = row.closest(".list-wrap");
+          if(wrap){
+            wrap.innerHTML = "";
+            renderListInto(wrap.parentNode, note);
+          }
+        }
+      }
+    });
+
+    return row;
+  }
+
+  function renderListInto(noteEl, n){
+    if(!Array.isArray(n.items)) n.items = [];
+    if(n.items.length === 0) n.items.push({t:"", done:false});
+
+    var wrap = noteEl.querySelector(".list-wrap");
+    if(!wrap) return;
+    wrap.innerHTML = "";
+
+    for(var i=0;i<n.items.length;i++){
+      wrap.appendChild(buildListRow(n, i));
+    }
+
+    // 新增按鈕
+    var addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "list-add";
+    addBtn.textContent = "＋ 新增項目";
+    addBtn.addEventListener("click", function(){ window.addItem(n.id); });
+    wrap.appendChild(addBtn);
+  }
+
+  function render() {
+    for (var k in roMap) {
+      try { roMap[k].disconnect(); } catch (e) {}
+      delete roMap[k];
+    }
+
+    board.innerHTML = "";
+
+    for (var i = 0; i < notes.length; i++) {
+      board.appendChild(buildNoteEl(notes[i]));
+    }
+  }
+
+  function startDrag(ev, id, el) {
+    ev.preventDefault();
+    bringToFront(id);
+
+    var n = findNote(id);
+    if (!n) return;
+
+    drag = {
+      id: id,
+      startX: ev.clientX,
+      startY: ev.clientY,
+      origX: n.x,
+      origY: n.y,
+      scrollLeft: board.scrollLeft,
+      scrollTop: board.scrollTop
+    };
+
+    el.setPointerCapture(ev.pointerId);
+    window.addEventListener("pointermove", onDragMove);
+    window.addEventListener("pointerup", onDragEnd, { once: true });
+  }
+
+  function onDragMove(ev) {
+    if (!drag) return;
+    var n = findNote(drag.id);
+    if (!n) return;
+
+    var dx = ev.clientX - drag.startX;
+    var dy = ev.clientY - drag.startY;
+    var sdx = board.scrollLeft - drag.scrollLeft;
+    var sdy = board.scrollTop - drag.scrollTop;
+
+    n.x = Math.max(0, drag.origX + dx + sdx);
+    n.y = Math.max(0, drag.origY + dy + sdy);
+
+    var el = board.querySelector('.note[data-id="' + cssEsc(drag.id) + '"]');
+    if (el) {
+      el.style.left = n.x + "px";
+      el.style.top = n.y + "px";
+    }
+  }
+
+  function onDragEnd() {
+    window.removeEventListener("pointermove", onDragMove);
+    drag = null;
+    save();
+  }
+
+  function attachResizeObserver(el, id) {
+    if (roMap[id]) return;
+    if (!("ResizeObserver" in window)) return; // 舊瀏覽器直接略過縮放記錄
+
+    var ro = new ResizeObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        var entry = entries[i];
+        var target = entry.target;
+        var nid = target.dataset.id;
+        var n = findNote(nid);
+        if (!n) continue;
+
+        var w = Math.round(entry.contentRect.width);
+        var h = Math.round(entry.contentRect.height);
+
+        if (w < 50 || h < 50) continue;
+
+        n.w = Math.max(180, w);
+        n.h = Math.max(140, h);
+      }
+      save();
+    });
+
+    ro.observe(el);
+    roMap[id] = ro;
+  }
+
+  function boot() {
+    if (addBtn) addBtn.addEventListener("click", window.addNote);
+
+    if (notes.length === 0) {
+      window.addNote();
+    } else {
+      render();
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
+</body>
+</html>

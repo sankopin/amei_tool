@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>阿梅浮水印工具</title>
+  <style>
+    :root{
+      --bg:#f5f5f6;
+      --panel:#ffffff;
+      --border:#e8e8ea;
+      --text:#1f1f1f;
+      --muted:#6b6b6b;
+      --shadow: 0 10px 28px rgba(0,0,0,.06);
+      --shadow-sm: 0 6px 18px rgba(0,0,0,.05);
+      --pill:#f2f2f4;
+      --pillActive:#1f1f1f;
+      --pillActiveText:#fff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 22px 14px 44px;
+    }
+    .wrap{max-width:1200px;margin:0 auto}
+
+    /* Top bar */
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      margin-bottom: 14px;
+    }
+    .topbar-left h1{margin:0;font-size:20px;letter-spacing:.2px}
+    .topbar-left .sub{
+      margin:6px 0 0;
+      font-size:12px;
+      line-height:1.55;
+      color:var(--muted);
+      max-width: 520px;
+    }
+
+    /* watermark toolbar (right side, no background) */
+    .wmbar{
+      width: min(560px, 100%);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .wmbar-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+    }
+    .wmbar-title{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      font-weight:800;
+      font-size:13px;
+      color: rgba(0,0,0,.72);
+      white-space:nowrap;
+    }
+    .wmbar-title .wmbar-sub{
+      font-weight:600;
+      font-size:12px;
+      color: rgba(0,0,0,.35);
+    }
+    .wmgrid{
+      display:grid;
+      grid-template-columns: 64px 1fr auto;
+      gap:10px 10px;
+      align-items:center;
+    }
+    .wmgrid label{
+      font-size:12px;
+      color:var(--muted);
+      text-align:right;
+    }
+    input[type="file"]{
+      width:100%;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      cursor:pointer;
+      font-size:12px;
+    }
+
+    /* Main layout */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr}
+      .topbar{flex-direction:column}
+      .wmbar{width:100%}
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:12px;
+      box-shadow: var(--shadow);
+    }
+
+    /* Preview panel */
+    .preview-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      background: #fff;
+      border:1px solid var(--border);
+      color: rgba(0,0,0,.55);
+      font-size:12px;
+      font-weight:700;
+    }
+    canvas{
+      width:100%;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow: var(--shadow-sm);
+      touch-action:none;
+      display:block;
+    }
+    .status{font-size:12px;color:var(--muted);min-height:18px;margin-top:8px}
+
+    /* Controls + sections (right panel) */
+    .section{padding:12px;border-radius:16px;background:#fbfbfc;border:1px solid var(--border); margin-bottom:10px;}
+    .section:last-child{margin-bottom:0}
+    .section .title{
+      font-size:13px;
+      font-weight:900;
+      margin:0 0 10px;
+      color: rgba(0,0,0,.75);
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .kv{
+      display:grid;
+      grid-template-columns: 120px 1fr;
+      gap:8px 10px;
+      align-items:center;
+      font-size:13px;
+    }
+    .kv label{color:var(--muted);font-size:12px}
+    .kv input[type="range"]{width:100%}
+    select, input[type="number"], input[type="color"], button{
+      font-size:13px;
+    }
+    select, input[type="number"]{
+      border-radius:12px;border:1px solid var(--border);background:#fff;
+      padding:10px 12px;
+    }
+    input[type="color"]{width:46px;height:34px;border-radius:10px;border:1px solid var(--border);padding:0;background:#fff}
+    button{
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      padding:10px 12px;
+      cursor:pointer;
+      transition: transform .05s ease, background .15s ease;
+      user-select:none;
+    }
+    button:hover{background:#fafafa}
+    button:active{transform: translateY(1px)}
+    button.primary{
+      background:#1f1f1f;
+      border-color:#1f1f1f;
+      color:#fff;
+    }
+    button.primary:hover{background:#111;border-color:#111}
+    button.danger{background:#fff3f3;border-color:#f1bcbc}
+    button.mini{padding:8px 10px;font-size:12px}
+    button.ghost{background:transparent}
+    .hint{color:var(--muted);font-size:12px;line-height:1.5;margin-top:6px}
+
+    /* Soft pill image list */
+    .thumbs{
+      display:flex;
+      gap:8px;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+      padding-bottom:6px;
+      margin-top:8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .thumbs::-webkit-scrollbar{ height: 8px; }
+    .thumbs::-webkit-scrollbar-thumb{ background: rgba(0,0,0,.12); border-radius: 999px; }
+    .pillbtn{
+      flex:0 0 auto;
+      min-width:64px;
+      height:34px;
+      padding:0 16px;
+      padding-left:12px;
+      padding-right:40px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: var(--pill);
+      color: rgba(0,0,0,.68);
+      display:inline-flex;
+      align-items:center;
+      justify-content:flex-start;
+      font-weight:800;
+      box-shadow: 0 8px 18px rgba(0,0,0,.04);
+      cursor:pointer;
+      transition: transform .05s ease, background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .pillbtn:hover{background:#ececef}
+    .pillbtn:active{transform: translateY(1px)}
+    .pillbtn.active{
+      background: var(--pillActive);
+      border-color: var(--pillActive);
+      color: var(--pillActiveText);
+      box-shadow: 0 10px 26px rgba(0,0,0,.10);
+    }
+
+    /* Swatches */
+    .swatches{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .swatch{
+      width:22px;height:22px;border-radius:9px;border:1px solid rgba(0,0,0,.12);
+      cursor:pointer;position:relative;box-shadow: 0 2px 10px rgba(0,0,0,.05);
+      background:#fff;
+    }
+    .swatch.selected::after{
+      content:"";position:absolute;inset:-3px;border:2px solid rgba(0,0,0,.25);border-radius:12px;
+    }
+
+    /* Toggle buttons */
+    .toggle{display:flex;gap:8px;flex-wrap:wrap}
+    .toggle button{
+      padding:8px 12px;
+      font-size:12px;
+      border-radius:999px;
+      background:#fff;
+    }
+    .toggle button.active{
+      background:#1f1f1f;
+      border-color:#1f1f1f;
+      color:#fff;
+    }
+
+    .warn{
+      background:#fffbe6;border:1px solid #f1e2a5;color:#6b5a12;border-radius:14px;
+      padding:10px 12px;font-size:12px;line-height:1.5;margin-top:10px;
+    }
+  
+    /* Pill wrapper + delete */
+    .pillwrap{
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .pillwrap .pillbtn{
+      padding-right: 34px; /* room for X */
+    }
+    .pilldel{
+      position:absolute;
+      right:10px;
+      width:20px;
+      height:20px;
+      border-radius:999px;
+      border:1px solid transparent;
+      background: rgba(255,255,255,.75);
+      color: rgba(0,0,0,.55);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      line-height:1;
+      cursor:pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,.05);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .15s ease, transform .05s ease, background .15s ease, border-color .15s ease, color .15s ease;
+    }
+    /* desktop hover + keyboard focus */
+    .pillwrap:hover .pilldel,
+    .pillwrap:focus-within .pilldel{
+      opacity:1;
+      pointer-events:auto;
+    }
+    /* mobile-friendly: show X on the active pill */
+    .pillwrap .pillbtn.active + .pilldel{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .pilldel:hover{
+      background:#fff;
+      border-color: var(--border);
+      color: rgba(0,0,0,.72);
+    }
+    .pilldel:active{ transform: translateY(1px); }
+
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>阿梅浮水印工具</h1>
+      <p class="sub">
+        正式：可調色（含「從原圖擷取色票」）＋描邊＋九宮格/拖拉定位。普通：黑白灰＋九宮格定位。
+      </p>
+    </div>
+
+    <div class="wmbar" aria-label="浮水印設定">
+      <div class="wmbar-head">
+        <div class="wmbar-title">
+          浮水印設定 <span class="wmbar-sub">建議用透明 PNG</span>
+        </div>
+        <button id="clearBuiltin" type="button" class="mini danger">清除內建</button>
+      </div>
+
+      <div class="wmgrid">
+        <label>正式</label>
+        <input id="wmFormalFile" type="file" accept="image/*" />
+        <button id="saveFormalBuiltin" type="button" class="mini primary">存成內建</button>
+
+        <label>普通</label>
+        <input id="wmNormalFile" type="file" accept="image/*" />
+        <button id="saveNormalBuiltin" type="button" class="mini primary">存成內建</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Left: preview -->
+    <div class="panel">
+      <div class="preview-head">
+        <div class="chip">預覽</div>
+        <div class="row">
+          <button id="fitBtn" class="mini ghost" type="button">縮放適合</button>
+          <button id="centerBtn" class="mini ghost" type="button">置中浮水印</button>
+        </div>
+      </div>
+      <canvas id="preview" width="1200" height="800"></canvas>
+      <div id="status" class="status"></div>
+    </div>
+
+    <!-- Right: controls -->
+    <div class="panel">
+      <div class="section">
+        <div class="title">1) 上傳原圖</div>
+
+        <div class="kv">
+          <label>原圖（可多張）</label>
+          <div class="row">
+            <input id="baseFiles" type="file" accept="image/*" multiple />
+            <button id="clearBaseList" type="button" class="mini danger">清空原圖列表</button>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="chip">圖片列表（點數字切換）</div>
+          <div id="thumbs" class="thumbs"></div>
+        </div>
+
+        <div class="hint">你可以分次上傳，圖片會追加進清單。</div>
+      </div>
+
+      <div class="section">
+        <div class="title">2) 模式</div>
+        <div class="toggle">
+          <button id="modeFormal" class="active" type="button">正式</button>
+          <button id="modeNormal" type="button">普通</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="title">3) 位置</div>
+        <div class="kv">
+          <label>九宮格</label>
+          <select id="posGrid">
+            <option value="TL">左上</option>
+            <option value="TC">上中</option>
+            <option value="TR">右上</option>
+            <option value="CL">左中</option>
+            <option value="CC" selected>正中</option>
+            <option value="CR">右中</option>
+            <option value="BL">左下</option>
+            <option value="BC">下中</option>
+            <option value="BR">右下</option>
+          </select>
+
+          <label>邊距（px）</label>
+          <input id="margin" type="number" min="0" value="40" />
+
+          <label>拖拉定位</label>
+          <div class="row">
+            <input id="dragEnable" type="checkbox" />
+            <span style="font-size:12px;color:var(--muted);">正式模式可在預覽上拖浮水印</span>
+          </div>
+        </div>
+        <div class="hint">普通模式僅支援九宮格定位（拖拉會自動忽略）。</div>
+      </div>
+
+      <div class="section">
+        <div class="title">4) 大小 / 透明度</div>
+        <div class="kv">
+          <label>浮水印寬度（%）</label>
+          <input id="wmScale" type="range" min="5" max="80" value="18" />
+          <label>不透明度</label>
+          <input id="wmOpacity" type="range" min="0" max="100" value="40" />
+        </div>
+      </div>
+
+      <div class="section" id="formalPanel">
+        <div class="title">5) 正式浮水印：上色 / 描邊</div>
+
+        <div class="row" style="justify-content:space-between;gap:12px;">
+          <div style="min-width:220px;">
+            <div class="chip">上色</div>
+            <div id="formalSwatches" class="swatches" style="margin-top:8px;"></div>
+            <div class="row" style="margin-top:10px;">
+              <span style="font-size:12px;color:var(--muted);">自訂：</span>
+              <input id="formalColorPicker" type="color" value="#111111" />
+              <button id="applyPicker" class="mini" type="button">套用</button>
+            </div>
+          </div>
+
+          <div style="flex:1;min-width:240px;">
+            <div class="chip">描邊</div>
+            <div class="kv" style="margin-top:8px;">
+              <label>開啟描邊</label>
+              <input id="strokeEnable" type="checkbox" checked />
+              <label>描邊粗細</label>
+              <input id="strokeWidth" type="range" min="0" max="16" value="4" />
+              <label>描邊顏色</label>
+              <input id="strokeColor" type="color" value="#ffffff" />
+              <label>描邊不透明度</label>
+              <input id="strokeOpacity" type="range" min="0" max="100" value="80" />
+            </div>
+          </div>
+        </div>
+
+        <div class="hint">色票會從「第一張原圖」擷取主色（你也可以用自訂顏色）。</div>
+      </div>
+
+      <div class="section" id="normalPanel" style="display:none;">
+        <div class="title">5) 普通浮水印：黑白灰</div>
+        <div class="chip">顏色</div>
+        <div class="swatches" id="normalSwatches" style="margin-top:8px;"></div>
+        <div class="hint">普通模式只提供黑/白/灰 + 不透明度（上面的 slider）。</div>
+      </div>
+
+      <div class="section">
+        <div class="title">6) 輸出</div>
+        <div class="row">
+          <button id="downloadOne" class="primary" type="button">下載目前這張</button>
+          <button id="downloadAll" type="button">批次下載全部</button>
+          <button id="resetBtn" class="danger" type="button">重置位置</button>
+        </div>
+        <div class="hint">批次下載會連續觸發多個下載（瀏覽器可能會問是否允許多檔下載）。</div>
+      </div>
+
+      <div class="warn">
+        ⭐ 方式A內建：你可以把浮水印「存進你的瀏覽器」— 下次打開工具會自動載入（只存在你自己的瀏覽器）。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Show runtime errors in the UI (helps debugging on iOS)
+window.addEventListener('error', (e) => {
+  try{ const el=document.getElementById('status'); if(el) el.textContent = '⚠️ 發生錯誤：' + (e?.message||''); }catch{}
+});
+
+/* ---------- Utilities ---------- */
+function clamp(v,min,max){ return Math.max(min, Math.min(max,v)); }
+function hexToRgb(hex){
+  const h = hex.replace('#','').trim();
+  const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h;
+  const n = parseInt(full,16);
+  return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+}
+function rgbaStr({r,g,b}, a){ return `rgba(${r},${g},${b},${a})`; }
+function rgbToHex(r,g,b){
+  const to = x => x.toString(16).padStart(2,'0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+function dist2(a,b){
+  const dr=a.r-b.r, dg=a.g-b.g, db=a.b-b.b;
+  return dr*dr+dg*dg+db*db;
+}
+
+/* ---------- Palette extraction ---------- */
+function extractPalette(img, count=8){
+  const maxSide = 160;
+  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const tctx = c.getContext('2d', { willReadFrequently:true });
+  tctx.drawImage(img, 0, 0, w, h);
+  const data = tctx.getImageData(0,0,w,h).data;
+
+  const bins = new Map();
+  for(let i=0;i<data.length;i+=4){
+    const a = data[i+3];
+    if(a < 200) continue;
+    const r = data[i]>>3, g=data[i+1]>>3, b=data[i+2]>>3;
+    const key = (r<<10) | (g<<5) | b;
+    bins.set(key, (bins.get(key)||0)+1);
+  }
+  const sorted = [...bins.entries()].sort((a,b)=>b[1]-a[1]).slice(0, 60);
+  const candidates = sorted.map(([key, n]) => {
+    const r = ((key>>10)&31)<<3 | 4;
+    const g = ((key>>5)&31)<<3 | 4;
+    const b = (key&31)<<3 | 4;
+    return { r, g, b, n };
+  });
+
+  const picked = [];
+  const minD2 = 35*35;
+  for(const c2 of candidates){
+    if(picked.length >= count) break;
+    if(picked.every(p => dist2(p,c2) > minD2)){
+      picked.push(c2);
+    }
+  }
+  for(const c2 of candidates){
+    if(picked.length >= count) break;
+    if(!picked.includes(c2)) picked.push(c2);
+  }
+  return picked.slice(0,count).map(c2 => rgbToHex(c2.r,c2.g,c2.b));
+}
+
+/* ---------- Image loading ---------- */
+function fileToImage(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("圖片載入失敗")); };
+    img.src = url;
+  });
+}
+
+/* ---------- Built-in (localStorage) Watermarks: Method A ---------- */
+const BUILTIN_FORMAL_KEY = "ame_builtin_wm_formal_v3";
+const BUILTIN_NORMAL_KEY = "ame_builtin_wm_normal_v3";
+
+function imageToDataURL(img, mime="image/png"){
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const cctx = c.getContext("2d");
+  cctx.drawImage(img, 0, 0);
+  return c.toDataURL(mime);
+}
+function dataURLToImage(dataURL){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("內建浮水印載入失敗"));
+    img.src = dataURL;
+  });
+}
+
+/* ---------- State / DOM ---------- */
+const canvas = document.getElementById('preview');
+const ctx = canvas.getContext('2d');
+
+const baseFilesEl = document.getElementById('baseFiles');
+const clearBaseListBtn = document.getElementById('clearBaseList');
+const wmFormalFileEl = document.getElementById('wmFormalFile');
+const wmNormalFileEl = document.getElementById('wmNormalFile');
+const thumbsEl = document.getElementById('thumbs');
+const statusEl = document.getElementById('status');
+
+const saveFormalBuiltinBtn = document.getElementById("saveFormalBuiltin");
+const saveNormalBuiltinBtn = document.getElementById("saveNormalBuiltin");
+const clearBuiltinBtn = document.getElementById("clearBuiltin");
+
+const modeFormalBtn = document.getElementById('modeFormal');
+const modeNormalBtn = document.getElementById('modeNormal');
+const formalPanel = document.getElementById('formalPanel');
+const normalPanel = document.getElementById('normalPanel');
+
+const posGridEl = document.getElementById('posGrid');
+const marginEl = document.getElementById('margin');
+const dragEnableEl = document.getElementById('dragEnable');
+
+const wmScaleEl = document.getElementById('wmScale');
+const wmOpacityEl = document.getElementById('wmOpacity');
+
+const formalSwatchesEl = document.getElementById('formalSwatches');
+const normalSwatchesEl = document.getElementById('normalSwatches');
+const formalPicker = document.getElementById('formalColorPicker');
+const applyPickerBtn = document.getElementById('applyPicker');
+
+const strokeEnableEl = document.getElementById('strokeEnable');
+const strokeWidthEl = document.getElementById('strokeWidth');
+const strokeColorEl = document.getElementById('strokeColor');
+const strokeOpacityEl = document.getElementById('strokeOpacity');
+
+const downloadOneBtn = document.getElementById('downloadOne');
+const downloadAllBtn = document.getElementById('downloadAll');
+const resetBtn = document.getElementById('resetBtn');
+const fitBtn = document.getElementById('fitBtn');
+const centerBtn = document.getElementById('centerBtn');
+
+let baseItems = []; // {file, img, settings}
+let activeIndex = 0;
+
+let wmFormalImg = null;
+let wmNormalImg = null;
+
+let mode = 'formal'; // 'formal'|'normal'
+let formalColor = '#111111';
+let normalColor = '#111111';
+
+let drag = { isDown:false, x:0, y:0, ox:0, oy:0, hasManual:false };
+
+function setStatus(msg){ statusEl.textContent = msg || ''; }
+
+/* ---------- Swatches ---------- */
+function clearSwatchSelected(container){
+  [...container.querySelectorAll('.swatch')].forEach(s => s.classList.remove('selected'));
+}
+function addSwatch(container, color, onPick){
+  const div = document.createElement('div');
+  div.className = 'swatch';
+  div.style.background = color;
+  div.title = color;
+  div.addEventListener('click', () => {
+    clearSwatchSelected(container);
+    div.classList.add('selected');
+    onPick(color);
+    saveCurrentItemSettings();
+    draw();
+  });
+  container.appendChild(div);
+  return div;
+}
+function initSwatches(){
+  formalSwatchesEl.innerHTML = '';
+  normalSwatchesEl.innerHTML = '';
+
+  const baseSet = ['#000000','#ffffff','#808080','#111111','#e0e0e0'];
+  baseSet.forEach(c => addSwatch(formalSwatchesEl, c, (col)=>{ formalColor=col; }));
+  ['#000000','#ffffff','#808080'].forEach(c => addSwatch(normalSwatchesEl, c, (col)=>{ normalColor=col; }));
+
+  const firstFormal = formalSwatchesEl.querySelector('.swatch');
+  if(firstFormal) firstFormal.classList.add('selected');
+  const firstNormal = normalSwatchesEl.querySelector('.swatch');
+  if(firstNormal) firstNormal.classList.add('selected');
+}
+initSwatches();
+
+/* ---------- Per-image settings ---------- */
+function getUISettings(){
+  return {
+    mode,
+    canvasW: canvas.width,
+    canvasH: canvas.height,
+
+    grid: posGridEl.value,
+    marginPx: Number(marginEl.value||0),
+    dragEnable: !!dragEnableEl.checked,
+    scalePct: Number(wmScaleEl.value),
+    opacity: Number(wmOpacityEl.value)/100,
+    formalColor,
+    normalColor,
+    strokeEnable: !!strokeEnableEl.checked,
+    strokeWidth: Number(strokeWidthEl.value),
+    strokeColor: strokeColorEl.value,
+    strokeOpacity: Number(strokeOpacityEl.value)/100,
+    manual: { enabled: (mode==='formal' && dragEnableEl.checked && drag.hasManual), x: drag.x, y: drag.y, hasManual: !!drag.hasManual }
+  };
+}
+function applyUISettings(s){
+  if(!s) return;
+
+  setMode(s.mode || 'formal', { silent: true });
+
+  // restore per-image preview canvas size
+  if(s.canvasW && s.canvasH){ canvas.width = s.canvasW; canvas.height = s.canvasH; }
+
+  if(s.grid) posGridEl.value = s.grid;
+  if(Number.isFinite(s.marginPx)) marginEl.value = s.marginPx;
+
+  if(Number.isFinite(s.scalePct)) wmScaleEl.value = s.scalePct;
+  if(Number.isFinite(s.opacity)) wmOpacityEl.value = Math.round(s.opacity*100);
+
+  if(s.formalColor) formalColor = s.formalColor;
+  if(s.normalColor) normalColor = s.normalColor;
+
+  strokeEnableEl.checked = !!s.strokeEnable;
+  if(Number.isFinite(s.strokeWidth)) strokeWidthEl.value = s.strokeWidth;
+  if(s.strokeColor) strokeColorEl.value = s.strokeColor;
+  if(Number.isFinite(s.strokeOpacity)) strokeOpacityEl.value = Math.round(s.strokeOpacity*100);
+
+  dragEnableEl.checked = !!s.dragEnable;
+  if(s.manual){
+    drag.hasManual = !!s.manual.hasManual;
+    drag.x = Number.isFinite(s.manual.x) ? s.manual.x : 0;
+    drag.y = Number.isFinite(s.manual.y) ? s.manual.y : 0;
+  }else{
+    resetPlacement();
+  }
+}
+function ensureItemSettings(it){
+  if(!it.settings) it.settings = getUISettings();
+}
+function saveCurrentItemSettings(){
+  const it = baseItems[activeIndex];
+  if(!it) return;
+  ensureItemSettings(it);
+  it.settings = getUISettings();
+}
+
+/* ---------- Thumbs ---------- */
+function rebuildThumbButtons(){
+  thumbsEl.innerHTML = '';
+  baseItems.forEach((it, i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'pillwrap';
+
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pillbtn' + (i === activeIndex ? ' active' : '');
+    b.textContent = String(i + 1);
+
+    b.addEventListener('click', () => {
+      saveCurrentItemSettings();
+      activeIndex = i;
+      ensureItemSettings(baseItems[activeIndex]);
+      setCanvasForItem(baseItems[activeIndex]); // ✅ restore this image's preview size
+      applyUISettings(baseItems[activeIndex].settings);
+      rebuildThumbButtons();
+      draw();
+    });
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'pilldel';
+    del.title = '刪除此圖';
+    del.textContent = '×';
+    del.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      const removingActive = (i === activeIndex);
+      baseItems.splice(i, 1);
+
+      if(baseItems.length === 0){
+        activeIndex = 0;
+        thumbsEl.innerHTML = '';
+        resetPlacement();
+        setStatus('已刪除：原圖列表現在是空的。');
+        draw();
+        return;
+      }
+
+      // adjust activeIndex
+      if(removingActive){
+        activeIndex = Math.min(i, baseItems.length - 1);
+      }else if(i < activeIndex){
+        activeIndex -= 1;
+      }
+
+      ensureItemSettings(baseItems[activeIndex]);
+      setCanvasForItem(baseItems[activeIndex]);
+      applyUISettings(baseItems[activeIndex].settings);
+      rebuildThumbButtons();
+      setStatus(`已刪除第 ${i+1} 張（目前剩 ${baseItems.length} 張）。`);
+      draw();
+    });
+
+    wrap.appendChild(b);
+    wrap.appendChild(del);
+    thumbsEl.appendChild(wrap);
+  });
+}
+
+/* ---------- Mode ---------- */
+function setMode(next, opts={silent:false}){
+  mode = next;
+  modeFormalBtn.classList.toggle('active', mode==='formal');
+  modeNormalBtn.classList.toggle('active', mode==='normal');
+  formalPanel.style.display = (mode==='formal') ? '' : 'none';
+  normalPanel.style.display = (mode==='normal') ? '' : 'none';
+  if(!opts.silent){
+    saveCurrentItemSettings();
+    draw();
+  }
+}
+modeFormalBtn.addEventListener('click', ()=>setMode('formal'));
+modeNormalBtn.addEventListener('click', ()=>setMode('normal'));
+
+/* ---------- Base images ---------- */
+async function loadBaseFiles(files){
+  if(!files.length){
+    setStatus('尚未選擇原圖。');
+    draw();
+    return;
+  }
+
+  setStatus('載入原圖中…');
+
+  const existingKeys = new Set(baseItems.map(it => `${it.file.name}|${it.file.size}|${it.file.lastModified}`));
+  const newFiles = files.filter(f => !existingKeys.has(`${f.name}|${f.size}|${f.lastModified}`));
+
+  if(newFiles.length === 0){
+    setStatus('這次選的圖片都已經在清單裡了（沒有新增）。');
+    return;
+  }
+
+  try{
+    const imgs = await Promise.all(newFiles.map(fileToImage));
+    const newItems = newFiles.map((f,i)=>({ file:f, img:imgs[i], settings:null }));
+    newItems.forEach(it => {
+      const base = it.img;
+      const sz = computeFitSizeFor(base);
+      it.settings = { ...getUISettings(), canvasW: sz.w, canvasH: sz.h };
+    });
+
+    const oldCount = baseItems.length;
+    baseItems.push(...newItems);
+
+    if(oldCount === 0){
+      try{
+        const pal = extractPalette(baseItems[0].img, 8);
+        initSwatches();
+        pal.forEach(c => addSwatch(formalSwatchesEl, c, (col)=>{ formalColor=col; }));
+        setStatus(`已載入 ${baseItems.length} 張原圖，並從第一張擷取 ${pal.length} 個主色。`);
+      }catch{
+        setStatus(`已載入 ${baseItems.length} 張原圖（色票擷取失敗，但不影響使用）。`);
+      }
+      activeIndex = 0;
+      fitCanvasToImage();
+      applyUISettings(baseItems[0].settings);
+    }else{
+      setStatus(`已新增 ${newItems.length} 張原圖（目前共 ${baseItems.length} 張）。`);
+    }
+
+    rebuildThumbButtons();
+    draw();
+  }catch(err){
+    console.error(err);
+    setStatus('載入失敗：請確認圖片檔案是否正常。');
+  }
+}
+
+baseFilesEl.addEventListener('change', (e)=>{
+  const files = [...(e.target.files||[])];
+  loadBaseFiles(files);
+  e.target.value = "";
+});
+
+clearBaseListBtn.addEventListener('click', ()=>{
+  baseItems = [];
+  activeIndex = 0;
+  thumbsEl.innerHTML = '';
+  resetPlacement();
+  setStatus('已清空原圖列表 ✅');
+  draw();
+});
+
+/* ---------- Watermark uploads ---------- */
+wmFormalFileEl.addEventListener('change', async (e)=>{
+  const f = e.target.files?.[0];
+  if(!f){ wmFormalImg=null; draw(); return; }
+  wmFormalImg = await fileToImage(f);
+  setStatus('已載入正式浮水印（可存成內建）。');
+  draw();
+});
+wmNormalFileEl.addEventListener('change', async (e)=>{
+  const f = e.target.files?.[0];
+  if(!f){ wmNormalImg=null; draw(); return; }
+  wmNormalImg = await fileToImage(f);
+  setStatus('已載入普通浮水印（可存成內建）。');
+  draw();
+});
+
+/* ---------- Built-in save/load/clear ---------- */
+saveFormalBuiltinBtn.addEventListener("click", () => {
+  if(!wmFormalImg){ setStatus("目前沒有正式浮水印可存。"); return; }
+  try{
+    localStorage.setItem(BUILTIN_FORMAL_KEY, imageToDataURL(wmFormalImg));
+    setStatus("已把「正式」浮水印存成內建 ✅（只在你這台/這個瀏覽器有效）");
+  }catch{
+    setStatus("儲存失敗：可能圖片太大導致 localStorage 空間不足。");
+  }
+});
+saveNormalBuiltinBtn.addEventListener("click", () => {
+  if(!wmNormalImg){ setStatus("目前沒有普通浮水印可存。"); return; }
+  try{
+    localStorage.setItem(BUILTIN_NORMAL_KEY, imageToDataURL(wmNormalImg));
+    setStatus("已把「普通」浮水印存成內建 ✅（只在你這台/這個瀏覽器有效）");
+  }catch{
+    setStatus("儲存失敗：可能圖片太大導致 localStorage 空間不足。");
+  }
+});
+clearBuiltinBtn.addEventListener("click", () => {
+  localStorage.removeItem(BUILTIN_FORMAL_KEY);
+  localStorage.removeItem(BUILTIN_NORMAL_KEY);
+  setStatus("已清除內建浮水印 ✅（不會影響你目前手動上傳的那一份）");
+});
+
+async function tryLoadBuiltinWatermarks(){
+  const formal = localStorage.getItem(BUILTIN_FORMAL_KEY);
+  const normal = localStorage.getItem(BUILTIN_NORMAL_KEY);
+  let loaded = false;
+
+  if(formal){
+    try{ wmFormalImg = await dataURLToImage(formal); loaded = true; }catch{}
+  }
+  if(normal){
+    try{ wmNormalImg = await dataURLToImage(normal); loaded = true; }catch{}
+  }
+
+  if(loaded){
+    setStatus("已自動載入內建浮水印 ✅（方式A）");
+  }else{
+    setStatus("提示：你可以上傳浮水印後按「存成內建」，下次就會自動載入。");
+  }
+  draw();
+}
+
+/* ---------- Placement ---------- */
+function resetPlacement(){ drag.hasManual=false; drag.x=0; drag.y=0; }
+resetBtn.addEventListener('click', ()=>{ resetPlacement(); saveCurrentItemSettings(); draw(); });
+
+function getGridPos(baseW, baseH, wmW, wmH, grid, margin){
+  const m = margin;
+  const left=m, right=baseW-wmW-m, top=m, bottom=baseH-wmH-m;
+  const cx=(baseW-wmW)/2, cy=(baseH-wmH)/2;
+  switch(grid){
+    case 'TL': return {x:left,y:top};
+    case 'TC': return {x:cx,y:top};
+    case 'TR': return {x:right,y:top};
+    case 'CL': return {x:left,y:cy};
+    case 'CC': return {x:cx,y:cy};
+    case 'CR': return {x:right,y:cy};
+    case 'BL': return {x:left,y:bottom};
+    case 'BC': return {x:cx,y:bottom};
+    case 'BR': return {x:right,y:bottom};
+    default: return {x:cx,y:cy};
+  }
+}
+
+
+/* ---------- Per-image canvas size (prevents aspect ratio jumping) ---------- */
+function computeFitSizeFor(img){
+  const maxW = 1200;
+  const s = Math.min(1, maxW / img.width);
+  return { w: Math.max(1, Math.round(img.width * s)), h: Math.max(1, Math.round(img.height * s)) };
+}
+function setCanvasForItem(item){
+  if(!item || !item.img) return;
+  ensureItemSettings(item);
+  if(item.settings && item.settings.canvasW && item.settings.canvasH){
+    canvas.width = item.settings.canvasW;
+    canvas.height = item.settings.canvasH;
+  }else{
+    const sz = computeFitSizeFor(item.img);
+    canvas.width = sz.w;
+    canvas.height = sz.h;
+    // store as default so switching back restores correctly
+    item.settings.canvasW = sz.w;
+    item.settings.canvasH = sz.h;
+  }
+}
+
+/* ---------- Canvas fitting (keeps original behavior) ---------- */
+function fitCanvasToImage(){
+  const item = baseItems[activeIndex];
+  const base = item?.img;
+  if(!base) return;
+  const sz = computeFitSizeFor(base);
+  canvas.width = sz.w;
+  canvas.height = sz.h;
+  // store for this image so switching back doesn't distort
+  ensureItemSettings(item);
+  item.settings.canvasW = sz.w;
+  item.settings.canvasH = sz.h;
+  saveCurrentItemSettings();
+}
+fitBtn.addEventListener('click', ()=>{ fitCanvasToImage(); draw(); });
+
+centerBtn.addEventListener('click', ()=>{
+  const wm = (mode==='formal' ? wmFormalImg : wmNormalImg);
+  if(!wm) return;
+  drag.hasManual = true;
+  const wmW = (Number(wmScaleEl.value)/100) * canvas.width;
+  const wmH = (wm.height / wm.width) * wmW;
+  drag.x = (canvas.width - wmW)/2;
+  drag.y = (canvas.height - wmH)/2;
+  saveCurrentItemSettings();
+  draw();
+});
+
+/* ---------- Dragging ---------- */
+function getMousePos(ev){
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (ev.clientX - rect.left) * (canvas.width / rect.width),
+    y: (ev.clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+canvas.addEventListener('pointerdown', (e)=>{
+  if(mode !== 'formal') return;
+  if(!dragEnableEl.checked) return;
+  if(!wmFormalImg) return;
+
+  const {wmRect} = computeWmRect();
+  const p = getMousePos(e);
+  if(p.x>=wmRect.x && p.x<=wmRect.x+wmRect.w && p.y>=wmRect.y && p.y<=wmRect.y+wmRect.h){
+    drag.isDown = true;
+    drag.hasManual = true;
+    drag.ox = p.x - wmRect.x;
+    drag.oy = p.y - wmRect.y;
+    canvas.setPointerCapture(e.pointerId);
+  }
+});
+canvas.addEventListener('pointermove', (e)=>{
+  if(!drag.isDown) return;
+  const p = getMousePos(e);
+  const {wmRect} = computeWmRect();
+  drag.x = p.x - drag.ox;
+  drag.y = p.y - drag.oy;
+
+  const m = Number(marginEl.value||0);
+  drag.x = clamp(drag.x, m, canvas.width - wmRect.w - m);
+  drag.y = clamp(drag.y, m, canvas.height - wmRect.h - m);
+
+  saveCurrentItemSettings();
+  draw();
+});
+canvas.addEventListener('pointerup', (e)=>{
+  drag.isDown = false;
+  try{ canvas.releasePointerCapture(e.pointerId); }catch{}
+});
+canvas.addEventListener('pointercancel', ()=>{ drag.isDown=false; });
+
+/* ---------- Watermark rendering helpers ---------- */
+function tintImageToCanvas(img, colorHex, alpha=1){
+  const c = document.createElement('canvas');
+  c.width = img.width; c.height = img.height;
+  const cctx = c.getContext('2d');
+  cctx.clearRect(0,0,c.width,c.height);
+  cctx.drawImage(img,0,0);
+  cctx.globalCompositeOperation = 'source-in';
+  cctx.fillStyle = rgbaStr(hexToRgb(colorHex), alpha);
+  cctx.fillRect(0,0,c.width,c.height);
+  cctx.globalCompositeOperation = 'source-over';
+  return c;
+}
+function drawOutlined(outCtx, tintedCanvas, x, y, w, h, strokeHex, strokeAlpha, strokeWidth){
+  if(strokeWidth <= 0) return;
+  const mask = tintImageToCanvas(tintedCanvas, strokeHex, strokeAlpha);
+  const steps = Math.max(8, Math.round(strokeWidth*6));
+  for(let i=0;i<steps;i++){
+    const ang = (i/steps) * Math.PI*2;
+    outCtx.drawImage(mask, x + Math.cos(ang)*strokeWidth, y + Math.sin(ang)*strokeWidth, w, h);
+  }
+}
+
+/* ---------- Compute WM rect ---------- */
+function computeWmRect(){
+  const wm = (mode==='formal' ? wmFormalImg : wmNormalImg);
+  const res = { wmRect:{x:0,y:0,w:0,h:0} };
+  if(!wm) return res;
+
+  const wmW = (Number(wmScaleEl.value)/100) * canvas.width;
+  const wmH = (wm.height / wm.width) * wmW;
+
+  const grid = posGridEl.value;
+  const margin = Number(marginEl.value || 0);
+
+  let pos;
+  if(mode==='formal' && dragEnableEl.checked && drag.hasManual){
+    pos = { x: drag.x, y: drag.y };
+  }else{
+    pos = getGridPos(canvas.width, canvas.height, wmW, wmH, grid, margin);
+  }
+
+  pos.x = clamp(pos.x, margin, canvas.width - wmW - margin);
+  pos.y = clamp(pos.y, margin, canvas.height - wmH - margin);
+
+  res.wmRect = { x:pos.x, y:pos.y, w:wmW, h:wmH };
+  return res;
+}
+
+/* ---------- Draw preview ---------- */
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const base = baseItems[activeIndex]?.img;
+  if(!base){
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#888';
+    ctx.font = '14px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+    ctx.fillText('請先上傳原圖（可以多次追加）與浮水印（或使用內建）。', 18, 28);
+    return;
+  }
+
+  ctx.drawImage(base, 0, 0, canvas.width, canvas.height);
+
+  const wm = (mode==='formal' ? wmFormalImg : wmNormalImg);
+  if(!wm) return;
+
+  const opacity = Number(wmOpacityEl.value)/100;
+  const { wmRect } = computeWmRect();
+
+  if(mode === 'formal'){
+    const tinted = tintImageToCanvas(wm, formalColor, 1);
+    if(strokeEnableEl.checked){
+      drawOutlined(
+        ctx, tinted,
+        wmRect.x, wmRect.y, wmRect.w, wmRect.h,
+        strokeColorEl.value,
+        Number(strokeOpacityEl.value)/100,
+        Number(strokeWidthEl.value)
+      );
+    }
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(tinted, wmRect.x, wmRect.y, wmRect.w, wmRect.h);
+    ctx.globalAlpha = 1;
+  }else{
+    const tinted = tintImageToCanvas(wm, normalColor, 1);
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(tinted, wmRect.x, wmRect.y, wmRect.w, wmRect.h);
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---------- Control events ---------- */
+[posGridEl, marginEl, dragEnableEl, wmScaleEl, wmOpacityEl,
+ strokeEnableEl, strokeWidthEl, strokeColorEl, strokeOpacityEl
+].forEach(el => el.addEventListener('input', ()=>{ saveCurrentItemSettings(); draw(); }));
+
+applyPickerBtn.addEventListener('click', ()=>{
+  formalColor = formalPicker.value;
+  clearSwatchSelected(formalSwatchesEl);
+  saveCurrentItemSettings();
+  draw();
+});
+
+/* ---------- Downloads ---------- */
+function downloadDataUrl(dataUrl, filename){
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function renderFullSize(baseImg, wmImg, modeFor, opts){
+  const out = document.createElement('canvas');
+  out.width = baseImg.width;
+  out.height = baseImg.height;
+  const octx = out.getContext('2d');
+  octx.drawImage(baseImg, 0, 0, out.width, out.height);
+
+  const wmW = (opts.scalePct/100) * out.width;
+  const wmH = (wmImg.height / wmImg.width) * wmW;
+
+  const margin = opts.marginPx;
+  let x,y;
+  if(modeFor==='formal' && opts.manual && opts.manual.enabled){
+    const rx = baseImg.width / canvas.width;
+    const ry = baseImg.height / canvas.height;
+    x = clamp(opts.manual.x * rx, margin, out.width - wmW - margin);
+    y = clamp(opts.manual.y * ry, margin, out.height - wmH - margin);
+  }else{
+    const p = getGridPos(out.width, out.height, wmW, wmH, opts.grid, margin);
+    x = p.x; y = p.y;
+  }
+
+  const opacity = opts.opacity;
+
+  if(modeFor==='formal'){
+    const tinted = tintImageToCanvas(wmImg, opts.color, 1);
+    if(opts.strokeEnable && opts.strokeWidth > 0){
+      const steps = Math.max(8, Math.round(opts.strokeWidth*6));
+      const strokeMask = tintImageToCanvas(tinted, opts.strokeColor, opts.strokeOpacity);
+      for(let i=0;i<steps;i++){
+        const ang = (i/steps) * Math.PI*2;
+        octx.drawImage(strokeMask, x+Math.cos(ang)*opts.strokeWidth, y+Math.sin(ang)*opts.strokeWidth, wmW, wmH);
+      }
+    }
+    octx.globalAlpha = opacity;
+    octx.drawImage(tinted, x, y, wmW, wmH);
+    octx.globalAlpha = 1;
+  }else{
+    const tinted = tintImageToCanvas(wmImg, opts.color, 1);
+    octx.globalAlpha = opacity;
+    octx.drawImage(tinted, x, y, wmW, wmH);
+    octx.globalAlpha = 1;
+  }
+  return out;
+}
+
+downloadOneBtn.addEventListener('click', ()=>{
+  const item = baseItems[activeIndex];
+  if(!item){ setStatus('沒有原圖。'); return; }
+
+  saveCurrentItemSettings();
+  const s = item.settings || getUISettings();
+
+  const wm = ((s.mode||mode)==='formal' ? wmFormalImg : wmNormalImg);
+  if(!wm){ setStatus('沒有對應的浮水印圖（可上傳或使用內建）。'); return; }
+
+  const opts = {
+    grid: s.grid || posGridEl.value,
+    marginPx: Number(s.marginPx ?? marginEl.value ?? 0),
+    scalePct: Number(s.scalePct ?? wmScaleEl.value),
+    opacity: Number(s.opacity ?? (Number(wmOpacityEl.value)/100)),
+    color: ((s.mode||mode)==='formal' ? (s.formalColor||formalColor) : (s.normalColor||normalColor)),
+    strokeEnable: !!s.strokeEnable,
+    strokeWidth: Number(s.strokeWidth ?? strokeWidthEl.value),
+    strokeColor: s.strokeColor || strokeColorEl.value,
+    strokeOpacity: Number(s.strokeOpacity ?? (Number(strokeOpacityEl.value)/100)),
+    manual: { enabled: !!(s.manual && s.manual.enabled), x: (s.manual?.x ?? drag.x), y: (s.manual?.y ?? drag.y) }
+  };
+
+  const out = renderFullSize(item.img, wm, (s.mode||mode), opts);
+  const nameBase = item.file?.name ? item.file.name.replace(/\.[^.]+$/,'') : `image_${activeIndex+1}`;
+  downloadDataUrl(out.toDataURL('image/jpg'), `watermarked_${nameBase}.jpg`);
+});
+
+downloadAllBtn.addEventListener('click', ()=>{
+  saveCurrentItemSettings();
+  if(!baseItems.length){ setStatus('沒有原圖。'); return; }
+
+  baseItems.forEach((it, i)=>{
+    const s = it.settings || getUISettings();
+    const wm = ((s.mode||mode)==='formal' ? wmFormalImg : wmNormalImg);
+    if(!wm) return;
+
+    const opts = {
+      grid: s.grid || posGridEl.value,
+      marginPx: Number(s.marginPx ?? marginEl.value ?? 0),
+      scalePct: Number(s.scalePct ?? wmScaleEl.value),
+      opacity: Number(s.opacity ?? (Number(wmOpacityEl.value)/100)),
+      color: ((s.mode||mode)==='formal' ? (s.formalColor||formalColor) : (s.normalColor||normalColor)),
+      strokeEnable: !!s.strokeEnable,
+      strokeWidth: Number(s.strokeWidth ?? strokeWidthEl.value),
+      strokeColor: s.strokeColor || strokeColorEl.value,
+      strokeOpacity: Number(s.strokeOpacity ?? (Number(strokeOpacityEl.value)/100)),
+      manual: { enabled: !!(s.manual && s.manual.enabled), x: (s.manual?.x ?? 0), y: (s.manual?.y ?? 0) }
+    };
+
+    const out = renderFullSize(it.img, wm, (s.mode||mode), opts);
+    const nameBase = it.file?.name ? it.file.name.replace(/\.[^.]+$/,'') : `image_${i+1}`;
+    downloadDataUrl(out.toDataURL('image/jpg'), `watermarked_${String(i+1).padStart(2,'0')}_${nameBase}.jpg`);
+  });
+
+  setStatus(`已觸發 ${baseItems.length} 個下載（若瀏覽器阻擋多檔下載，請允許）。`);
+});
+
+/* ---------- Init ---------- */
+tryLoadBuiltinWatermarks();
+draw();
+</script>
+</body>
+</html>

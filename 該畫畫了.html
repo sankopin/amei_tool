@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>該畫畫了</title>
+<style>
+  :root{
+    --bg:#f6f7f7;
+    --panel:#fff;
+    --border:#e7eaec;
+    --text:#222;
+    --muted:rgba(0,0,0,.55);
+    --accent:#2fb36a;
+    --accent2:#e9f8f0;
+
+    /* 間距微調（跟委託清單同一套） */
+    --form-gap: 12px;
+    --cell-pad: 12px;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    padding:24px;
+    background:var(--bg);
+    color:var(--text);
+    font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  h1{
+    margin:0 0 14px;
+    font-size:20px;
+    font-weight:950;
+    letter-spacing:.2px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,.06);
+    padding:16px;
+    margin-bottom:18px;
+  }
+  .form{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--form-gap);
+  }
+  label{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    font-size:12px;
+    color:rgba(0,0,0,.68);
+    font-weight:800;
+  }
+  input, textarea{
+    border:1px solid #ddd;
+    border-radius:12px;
+    padding:10px 11px;
+    font-size:13px;
+    background:#fff;
+    resize: vertical;
+  }
+  textarea{ min-height: 44px; }
+
+  input:focus, textarea:focus{
+    outline:none;
+    border-color: rgba(47,179,106,.55);
+    box-shadow: 0 0 0 4px rgba(47,179,106,.14);
+  }
+
+  .row-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-top: 12px;
+  }
+  button{
+    border:0;
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:900;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+  }
+  .btn-secondary{
+    background:#fff;
+    color:#333;
+    border:1px solid var(--border);
+  }
+  .hint{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.5;
+  }
+
+  .table-wrap{
+    overflow:auto;
+    border:1px solid var(--border);
+    border-radius:14px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout: fixed; /* Notion-ish：欄寬更穩定 */
+    font-size:13px;
+    background:#fff;
+  }
+  th, td{
+    padding: var(--cell-pad);
+    border-bottom:1px solid #eee;
+    text-align:left;
+    vertical-align:top;
+    white-space: nowrap;
+    overflow:hidden;
+    text-overflow: ellipsis;
+  }
+  th{
+    background:#fafafa;
+    position:sticky;
+    top:0;
+    z-index:1;
+    font-weight:950;
+  }
+
+  tr.done{
+    color:#aaa;
+    background:#fcfcfc;
+  }
+
+  a{
+    color:var(--accent);
+    text-decoration:none;
+    font-weight:900;
+  }
+
+  .col-center{ text-align:center; }
+  td.col-center{ text-align:center; }
+
+  .btn-icon{
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    background:#fff;
+    border:1px solid var(--border);
+    cursor:pointer;
+  }
+  .btn-icon:hover{ background:#fafafa; }
+
+  /* 讓「內容 / 資料」可以換行顯示 */
+  .wrap{
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.5;
+  }
+
+  /* 讓手機也好用一點 */
+  @media (max-width: 720px){
+    body{ padding:14px; }
+    th, td{ padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>該畫畫了</h1>
+
+<div class="card">
+  <div class="form">
+    <label>項目
+      <input id="item" placeholder="例如：委託/無料/新刊插圖/練習" />
+    </label>
+
+    <label>DDL
+      <input id="ddl" type="date" />
+    </label>
+
+    <label style="grid-column: 1 / -1;">內容
+      <textarea id="content" placeholder="要畫什麼？備註、尺寸、需求…"></textarea>
+    </label>
+
+    <label style="grid-column: 1 / -1;">資料（網址或文字）
+      <textarea id="ref" placeholder="貼網址會自動變成連結；文字也可以直接寫在這裡"></textarea>
+    </label>
+  </div>
+
+  <div class="row-actions">
+    <button class="btn-primary" type="button" onclick="addRow()">新增</button>
+    <button class="btn-secondary" type="button" onclick="clearInputs()">清空輸入</button>
+    <div class="hint">清單會依 DDL 由近到遠排序；完成後會變灰並移到最下面。</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <colgroup>
+        <col style="width:140px">  <!-- 項目 -->
+        <col style="width:260px">  <!-- 內容 -->
+        <col style="width:260px">  <!-- 資料 -->
+        <col style="width:140px">  <!-- DDL -->
+        <col style="width:70px">   <!-- 完成 -->
+        <col style="width:80px">   <!-- 刪除 -->
+      </colgroup>
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>內容</th>
+          <th>資料</th>
+          <th>DDL</th>
+          <th class="col-center">完成</th>
+          <th class="col-center">刪除</th>
+        </tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = "ame_to_draw_list_v1";
+  let data = loadData();
+
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return arr.map(x => ({
+        item: x.item ?? "",
+        content: x.content ?? "",
+        ref: x.ref ?? "",
+        ddl: x.ddl ?? "",
+        done: !!x.done
+      }));
+    }catch(e){
+      return [];
+    }
+  }
+
+  function saveData(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function toKeyDate(ddl){
+    if(!ddl) return null;
+    const d = new Date(ddl + "T00:00:00");
+    if(Number.isNaN(d.getTime())) return null;
+    return d.getTime();
+  }
+
+  function sortData(){
+    data.sort((a,b)=>{
+      if(a.done !== b.done) return a.done ? 1 : -1;
+
+      const da = toKeyDate(a.ddl);
+      const db = toKeyDate(b.ddl);
+
+      // 無 DDL 的排後面（但仍在未完成區）
+      if(da === null && db !== null) return 1;
+      if(da !== null && db === null) return -1;
+      if(da === null && db === null) return 0;
+
+      return da - db;
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeAttr(s){ return escapeHtml(s).replaceAll("`","&#096;"); }
+
+  // 把文字中的 URL 轉成 <a>；非 URL 文字保留
+  function linkify(text){
+    const t = String(text ?? "").trim();
+    if(!t) return `<span style="color:#aaa">未填</span>`;
+
+    // 抓 http(s) 連結
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = t.split(urlRegex);
+
+    const html = parts.map(p=>{
+      if(urlRegex.test(p)){
+        const safe = escapeAttr(p);
+        return `<a href="${safe}" target="_blank">開啟連結</a>`;
+      }
+      // 一般文字保留（含換行）
+      const safeText = escapeHtml(p).replaceAll("\n","<br/>");
+      return safeText;
+    }).join("");
+
+    return html;
+  }
+
+  function render(){
+    sortData();
+    const tbody = document.getElementById("list");
+    tbody.innerHTML = "";
+
+    data.forEach((r,i)=>{
+      const tr = document.createElement("tr");
+      if(r.done) tr.classList.add("done");
+
+      tr.innerHTML = `
+        <td>${escapeHtml(r.item)}</td>
+        <td class="wrap">${escapeHtml(r.content).replaceAll("\\n","<br/>")}</td>
+        <td class="wrap">${linkify(r.ref)}</td>
+        <td>${escapeHtml(r.ddl)}</td>
+        <td class="col-center">
+          <input type="checkbox" ${r.done ? "checked":""} onchange="toggleDone(${i})">
+        </td>
+        <td class="col-center">
+          <button class="btn-icon" type="button" onclick="removeRow(${i})">刪除</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    saveData();
+  }
+
+  function addRow(){
+    const item = document.getElementById("item").value.trim();
+    const ddl = document.getElementById("ddl").value;
+    const content = document.getElementById("content").value.trim();
+    const ref = document.getElementById("ref").value.trim();
+
+    if(!item && !content && !ref && !ddl){
+      alert("至少填一個欄位再新增～");
+      return;
+    }
+
+    data.push({ item, content, ref, ddl, done:false });
+    render();
+  }
+
+  function clearInputs(){
+    ["item","ddl","content","ref"].forEach(id => document.getElementById(id).value = "");
+  }
+
+  function toggleDone(i){
+    data[i].done = !data[i].done;
+    render();
+  }
+
+  function removeRow(i){
+    if(!confirm("確定要刪除這筆嗎？")) return;
+    data.splice(i, 1);
+    render();
+  }
+
+  render();
+</script>
+
+</body>
+</html>

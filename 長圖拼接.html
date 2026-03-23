@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>圖片長條拼接工具</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 16px 48px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .file-input-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    input[type="file"] {
+      font-size: 13px;
+      max-width: 100%;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .bg-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .bg-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .bg-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+    }
+
+    .tag-textarea {
+      width: 100%;
+      min-height: 60px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    .image-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      max-height: 320px;
+      overflow: auto;
+    }
+
+    .image-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      background: #fff;
+    }
+
+    .image-item:last-child {
+      border-bottom: none;
+    }
+
+    .image-item.dragging {
+      opacity: 0.5;
+    }
+
+    .image-item.drag-over {
+      outline: 2px dashed #999;
+      outline-offset: -2px;
+    }
+
+    .image-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .file-info {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .image-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: #555;
+    }
+
+    .image-controls input[type="number"] {
+      width: 60px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+    }
+
+    .reorder-hint {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .btn {
+      border-radius: 8px;
+      border: none;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 12px;
+      transition: background 0.15s ease, transform 0.05s ease, opacity 0.15s ease;
+    }
+
+    .btn-primary {
+      background: #222;
+      color: #fff;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .status {
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+
+    .status.error {
+      color: #b00020;
+    }
+
+    .shrink-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .shrink-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .shrink-inputs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .shrink-inputs input[type="number"] {
+      width: 80px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+    }
+
+    .output-area {
+      margin-top: 28px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+    }
+
+    .output-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 14px;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      color: #222;
+      background: #fff;
+    }
+
+    .download-link[hidden] {
+      display: none;
+    }
+
+    .preview {
+      margin-top: 12px;
+      max-height: 400px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      background: #fff;
+      padding: 8px;
+    }
+
+    .preview img {
+      max-width: 100%;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .preview + .preview {
+      margin-top: 8px;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #999;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>圖片長條拼接工具</h1>
+  <div class="subtitle">
+    將多張圖片依順序縮放為固定寬度 <strong>1500px</strong> 並往下拼接。<br />
+    可選背景色（3 種）、在最前面加入文字首圖（1500×1500）、在任意圖片後插入 1500×1500 空白區塊，並可輸出縮小版長圖。
+  </div>
+
+  <!-- 1. 選圖 -->
+  <div class="section">
+    <div class="section-title">1. 選擇要拼接的圖片</div>
+    <div class="file-input-row">
+      <input id="imageFiles" type="file" accept="image/*" multiple />
+    </div>
+    <div class="hint">
+      ・支援多張圖片，會照目前列表順序拼接。<br />
+      ・上傳後可拖曳調整順序、設定插入空白區塊。
+    </div>
+  </div>
+
+  <!-- 2. 背景顏色（三種固定選項） -->
+  <div class="section">
+    <div class="section-title">2. 背景顏色（含空白區塊）</div>
+    <div class="bg-row">
+      <label class="bg-option">
+        <input type="radio" name="bgColorChoice" value="#FFFFFF" checked />
+        <span class="bg-swatch" style="background:#FFFFFF;"></span>
+        <span>#FFFFFF（白）</span>
+      </label>
+      <label class="bg-option">
+        <input type="radio" name="bgColorChoice" value="#E0E0E0" />
+        <span class="bg-swatch" style="background:#E0E0E0;"></span>
+        <span>#E0E0E0（淺灰）</span>
+      </label>
+      <label class="bg-option">
+        <input type="radio" name="bgColorChoice" value="#272727" />
+        <span class="bg-swatch" style="background:#272727;"></span>
+        <span>#272727（深灰）</span>
+      </label>
+    </div>
+    <div class="hint">
+      長圖底色與插入的 1500×1500 空白區塊都會使用這個顏色。
+    </div>
+  </div>
+
+  <!-- 3. 文字首圖 -->
+  <div class="section">
+    <div class="section-title">3. 文字首圖（選用）</div>
+    <label class="shrink-label" style="margin-bottom:6px;">
+      <input id="enableTextCover" type="checkbox" />
+      在最前面加一張 1500×1500 文字卡片
+    </label>
+    <textarea
+      id="textCoverInput"
+      class="tag-textarea"
+      placeholder="輸入要放在文字卡片中的句子"
+    ></textarea>
+    <div class="hint">
+          </div>
+    <div class="image-controls" style="margin-top:6px;">
+      <span>在文字首圖後插入空白區域，數量:：</span>
+      <input id="textCoverBlankAfter" type="number" min="0" value="0" />
+    </div>
+  </div>
+
+  <!-- 4. 圖片列表 / 插空白 / 排序 -->
+  <div class="section">
+    <div class="section-title">4. 圖片順序與空白區塊設定</div>
+    <ul id="imageList" class="image-list"></ul>
+    <div class="reorder-hint">
+      ・可拖曳每一列調整順序（按住列拖動）。<br />
+      ・每列的「插入空白」代表在這張圖片後面插入幾個空白區域。
+    </div>
+  </div>
+
+  <!-- 5. 輸出設定 -->
+  <div class="section">
+    <div class="section-title">5. 輸出設定</div>
+    <div class="shrink-row">
+      <label class="shrink-label">
+        <input id="enableShrink" type="checkbox" checked />
+        另外輸出一張縮小版長圖
+      </label>
+      <div class="shrink-inputs">
+        寬度：
+        <input id="shrinkWidth" type="number" min="300" max="1500" value="1000" />
+        px（需小於 1500 才會縮小）
+      </div>
+    </div>
+    <div class="hint">若不勾選，則僅輸出 1500px 寬的原始長圖。</div>
+  </div>
+
+  <!-- 6. 開始 -->
+  <div class="section">
+    <div class="section-title">6. 開始拼接</div>
+    <button id="mergeBtn" class="btn btn-primary">生成長條圖片</button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <!-- 輸出結果 -->
+  <div class="output-area">
+    <div class="output-title">輸出結果</div>
+    <a id="downloadLink" class="download-link" href="#" download="merged-1500px.png" hidden>
+      下載原始長圖（1500px 寬 PNG）
+    </a>
+    <a id="downloadLinkSmall" class="download-link" href="#" download="merged-縮小版.png" hidden>
+      下載縮小版長圖（PNG）
+    </a>
+
+    <div class="preview" id="previewContainer" hidden>
+      <img id="previewImage" alt="拼接預覽（1500px 寬）" />
+    </div>
+    <div class="preview" id="previewContainerSmall" hidden>
+      <img id="previewImageSmall" alt="縮小版預覽" />
+    </div>
+
+    <div class="note">
+      若要另存圖片：可以點上方「下載」按鈕，或在預覽圖片上右鍵／長按儲存。<br />
+      注意：若拼接太多張超高圖片，可能會接近瀏覽器單張 canvas 的高度限制。
+    </div>
+  </div>
+
+  <script>
+    const TARGET_WIDTH = 1500;
+
+    const fileInput = document.getElementById("imageFiles");
+    const imageListEl = document.getElementById("imageList");
+    const enableTextCover = document.getElementById("enableTextCover");
+    const textCoverInput = document.getElementById("textCoverInput");
+    const textCoverBlankAfterInput = document.getElementById("textCoverBlankAfter");
+    const enableShrink = document.getElementById("enableShrink");
+    const shrinkWidthInput = document.getElementById("shrinkWidth");
+    const mergeBtn = document.getElementById("mergeBtn");
+    const statusEl = document.getElementById("status");
+    const downloadLink = document.getElementById("downloadLink");
+    const downloadLinkSmall = document.getElementById("downloadLinkSmall");
+    const previewContainer = document.getElementById("previewContainer");
+    const previewImage = document.getElementById("previewImage");
+    const previewContainerSmall = document.getElementById("previewContainerSmall");
+    const previewImageSmall = document.getElementById("previewImageSmall");
+
+    let imageItems = []; // { file, img, name, width, height, blankAfter }
+    let dragIndex = null;
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message || "";
+      statusEl.classList.toggle("error", isError);
+    }
+
+    // 取得當前選擇的背景色
+    function getBgColor() {
+      const checked = document.querySelector('input[name="bgColorChoice"]:checked');
+      return checked ? checked.value : "#FFFFFF";
+    }
+
+    function readImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => resolve({ img, file });
+          img.onerror = () => reject(new Error("圖片載入失敗：" + file.name));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error("無法讀取檔案：" + file.name));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function loadImagesFromInput() {
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) {
+        imageItems = [];
+        renderImageList();
+        setStatus("尚未選擇圖片。");
+        return;
+      }
+
+      setStatus("正在載入圖片…");
+      mergeBtn.disabled = true;
+      downloadLink.hidden = true;
+      downloadLinkSmall.hidden = true;
+      previewContainer.hidden = true;
+      previewContainerSmall.hidden = true;
+      previewImage.src = "";
+      previewImageSmall.src = "";
+
+      try {
+        const results = await Promise.all(files.map(readImageFile));
+        imageItems = results.map(({ img, file }) => ({
+          file,
+          img,
+          name: file.name,
+          width: img.width,
+          height: img.height,
+          blankAfter: 0
+        }));
+        renderImageList();
+        setStatus(`已載入 ${imageItems.length} 張圖片，可拖曳調整順序與設定空白區塊。`);
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || "載入圖片時發生錯誤。", true);
+      } finally {
+        mergeBtn.disabled = false;
+      }
+    }
+
+    fileInput.addEventListener("change", loadImagesFromInput);
+
+    function renderImageList() {
+      imageListEl.innerHTML = "";
+      if (!imageItems.length) {
+        const empty = document.createElement("li");
+        empty.className = "image-item";
+        empty.textContent = "尚未載入任何圖片。";
+        imageListEl.appendChild(empty);
+        return;
+      }
+
+      imageItems.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "image-item";
+        li.draggable = true;
+        li.dataset.index = index;
+
+        const mainRow = document.createElement("div");
+        mainRow.className = "image-main";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "file-name";
+        nameEl.textContent = `${index + 1}. ${item.name}`;
+
+        const infoEl = document.createElement("div");
+        infoEl.className = "file-info";
+        infoEl.textContent = `${item.width}×${item.height}px`;
+
+        mainRow.appendChild(nameEl);
+        mainRow.appendChild(infoEl);
+
+        const controls = document.createElement("div");
+        controls.className = "image-controls";
+
+        const gapLabel = document.createElement("span");
+        gapLabel.textContent = "在此圖後插入空白 1500×1500：";
+
+        const gapInput = document.createElement("input");
+        gapInput.type = "number";
+        gapInput.min = "0";
+        gapInput.value = item.blankAfter || 0;
+
+        gapInput.addEventListener("input", () => {
+          let val = parseInt(gapInput.value, 10);
+          if (isNaN(val) || val < 0) val = 0;
+          item.blankAfter = val;
+          gapInput.value = val;
+        });
+
+        controls.appendChild(gapLabel);
+        controls.appendChild(gapInput);
+
+        li.appendChild(mainRow);
+        li.appendChild(controls);
+
+        // Drag & drop events
+        li.addEventListener("dragstart", () => {
+          dragIndex = index;
+          li.classList.add("dragging");
+        });
+
+        li.addEventListener("dragend", () => {
+          dragIndex = null;
+          li.classList.remove("dragging");
+        });
+
+        li.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          li.classList.add("drag-over");
+        });
+
+        li.addEventListener("dragleave", () => {
+          li.classList.remove("drag-over");
+        });
+
+        li.addEventListener("drop", (e) => {
+          e.preventDefault();
+          li.classList.remove("drag-over");
+          const targetIndex = index;
+          if (dragIndex === null || dragIndex === targetIndex) return;
+          const moved = imageItems.splice(dragIndex, 1)[0];
+          imageItems.splice(targetIndex, 0, moved);
+          renderImageList();
+        });
+
+        imageListEl.appendChild(li);
+      });
+    }
+
+    // 文字首圖設定
+    function getTextCoverConfig() {
+      const enabled = enableTextCover.checked;
+      const text = (textCoverInput.value || "").trim();
+      let blankAfter = parseInt(textCoverBlankAfterInput.value, 10);
+      if (isNaN(blankAfter) || blankAfter < 0) blankAfter = 0;
+      textCoverBlankAfterInput.value = blankAfter;
+      if (!enabled || !text) return null;
+      return { text, blankAfter };
+    }
+
+    // 工具：分行
+    function getWrappedLines(ctx, text, maxWidth) {
+      // 用空白拆分，若全是中文沒有空白，會整段塞，但對簡短標籤句型通常還行
+      const words = text.split(" ");
+      let line = "";
+      const lines = [];
+
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line ? line + " " + words[n] : words[n];
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+
+        if (testWidth > maxWidth && n > 0) {
+          lines.push(line);
+          line = words[n];
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+      return lines;
+    }
+
+    // 工具：圓角矩形
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 畫 1500×1500 的文字首圖
+    function drawTextCover(ctx, x, y, size, bgColor, text) {
+      // 外框背景已經整張塗過 bgColor 了，這裡直接畫內部白色卡片即可
+      const cardPadding = 80;
+      const cardRadius = 40;
+      const cardX = x + cardPadding;
+      const cardY = y + cardPadding;
+      const cardW = size - cardPadding * 2;
+      const cardH = size - cardPadding * 2;
+
+      ctx.fillStyle = "#ffffff";
+      roundRect(ctx, cardX, cardY, cardW, cardH, cardRadius);
+
+      // 標題
+      ctx.fillStyle = "#999999";
+      ctx.font = "32px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText("投稿標籤", cardX + 32, cardY + 24);
+
+      // 主文字
+      ctx.fillStyle = "#222222";
+      ctx.font = "32px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+      const maxTextWidth = cardW - 64;
+      const areaTop = cardY + 90;
+      const areaBottom = cardY + cardH - 90;
+      const areaHeight = areaBottom - areaTop;
+      const lineHeight = 42;
+
+      const lines = getWrappedLines(ctx, text, maxTextWidth);
+      const totalTextHeight = lines.length * lineHeight;
+      const startY = areaTop + (areaHeight - totalTextHeight) / 2;
+
+      lines.forEach((l, index) => {
+        const lineWidth = ctx.measureText(l).width;
+        const centeredX = cardX + 32 + (maxTextWidth - lineWidth) / 2;
+        const lineY = startY + index * lineHeight;
+        ctx.fillText(l, centeredX, lineY);
+      });
+
+      // 右下角 ID
+      const idText = "@nijisanda匿名站";
+      ctx.font = "22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillStyle = "#bbbbbb";
+      const idMetrics = ctx.measureText(idText);
+      const idMargin = 32;
+      const idX = cardX + cardW - idMargin - idMetrics.width;
+      const idY = cardY + cardH - idMargin;
+      ctx.fillText(idText, idX, idY);
+    }
+
+    async function mergeImages() {
+      if (!imageItems.length && !getTextCoverConfig()) {
+        setStatus("請先載入至少一張圖片，或輸入文字首圖內容。", true);
+        return;
+      }
+
+      setStatus("正在計算尺寸與拼接…");
+      mergeBtn.disabled = true;
+      downloadLink.hidden = true;
+      downloadLinkSmall.hidden = true;
+      previewContainer.hidden = true;
+      previewContainerSmall.hidden = true;
+      previewImage.src = "";
+      previewImageSmall.src = "";
+
+      const bg = getBgColor();
+      const textCover = getTextCoverConfig();
+
+      try {
+        let totalHeight = 0;
+
+        // 文字首圖高度
+        if (textCover) {
+          totalHeight += TARGET_WIDTH; // 1500×1500
+          if (textCover.blankAfter && textCover.blankAfter > 0) {
+            totalHeight += textCover.blankAfter * TARGET_WIDTH;
+          }
+        }
+
+        // 計算縮放後高度與總高度（含空白）
+        const scaledList = imageItems.map((item) => {
+          const ratio = TARGET_WIDTH / item.width;
+          const newWidth = TARGET_WIDTH;
+          const newHeight = Math.round(item.height * ratio);
+          totalHeight += newHeight;
+          if (item.blankAfter && item.blankAfter > 0) {
+            totalHeight += item.blankAfter * TARGET_WIDTH; // 空白為 1500×1500
+          }
+          return {
+            ...item,
+            scaledWidth: newWidth,
+            scaledHeight: newHeight
+          };
+        });
+
+        // 主 canvas
+        const canvas = document.createElement("canvas");
+        canvas.width = TARGET_WIDTH;
+        canvas.height = totalHeight;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let offsetY = 0;
+
+        // 先畫文字首圖
+        if (textCover) {
+          drawTextCover(ctx, 0, offsetY, TARGET_WIDTH, bg, textCover.text);
+          offsetY += TARGET_WIDTH;
+
+          if (textCover.blankAfter && textCover.blankAfter > 0) {
+            ctx.fillStyle = bg;
+            for (let i = 0; i < textCover.blankAfter; i++) {
+              ctx.fillRect(0, offsetY, TARGET_WIDTH, TARGET_WIDTH);
+              offsetY += TARGET_WIDTH;
+            }
+          }
+        }
+
+        // 再畫圖片們
+        scaledList.forEach((item) => {
+          ctx.drawImage(item.img, 0, offsetY, item.scaledWidth, item.scaledHeight);
+          offsetY += item.scaledHeight;
+
+          if (item.blankAfter && item.blankAfter > 0) {
+            ctx.fillStyle = bg;
+            for (let i = 0; i < item.blankAfter; i++) {
+              ctx.fillRect(0, offsetY, TARGET_WIDTH, TARGET_WIDTH);
+              offsetY += TARGET_WIDTH;
+            }
+          }
+        });
+
+        const dataURL = canvas.toDataURL("image/png");
+        downloadLink.href = dataURL;
+        downloadLink.hidden = false;
+        previewImage.src = dataURL;
+        previewContainer.hidden = false;
+
+        let totalMsg = `完成！主長圖寬度 ${TARGET_WIDTH}px，高度約為 ${canvas.height}px。`;
+
+        // 縮小版
+        const shrinkEnabled = enableShrink.checked;
+        const shrinkWidthVal = parseInt(shrinkWidthInput.value, 10);
+        if (shrinkEnabled && !isNaN(shrinkWidthVal) && shrinkWidthVal > 0 && shrinkWidthVal < TARGET_WIDTH) {
+          const shrinkRatio = shrinkWidthVal / TARGET_WIDTH;
+          const smallCanvas = document.createElement("canvas");
+          smallCanvas.width = shrinkWidthVal;
+          smallCanvas.height = Math.round(canvas.height * shrinkRatio);
+          const sctx = smallCanvas.getContext("2d");
+
+          sctx.fillStyle = bg;
+          sctx.fillRect(0, 0, smallCanvas.width, smallCanvas.height);
+          sctx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+
+          const smallDataURL = smallCanvas.toDataURL("image/png");
+          downloadLinkSmall.href = smallDataURL;
+          downloadLinkSmall.hidden = false;
+          previewImageSmall.src = smallDataURL;
+          previewContainerSmall.hidden = false;
+
+          totalMsg += ` 同時輸出縮小版寬度 ${shrinkWidthVal}px，高度約為 ${smallCanvas.height}px。`;
+        } else {
+          downloadLinkSmall.hidden = true;
+          previewContainerSmall.hidden = true;
+        }
+
+        setStatus(totalMsg);
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || "拼接圖片時發生錯誤。", true);
+      } finally {
+        mergeBtn.disabled = false;
+      }
+    }
+
+    mergeBtn.addEventListener("click", mergeImages);
+
+    // 初始化列表顯示
+    renderImageList();
+  </script>
+</body>
+</html>

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>阿梅備忘錄</title>
+  <style>
+    :root{
+      --bg:#f5f5f5;
+      --panel:#ffffff;
+      --border:#e6e6e6;
+      --text:#1f1f1f;
+      --muted:#6b6b6b;
+
+      --purple:#7c3aed; /* 今日緊急 */
+      --red:#ef4444;    /* 理想進度 */
+      --orange:#f59e0b; /* 重要非緊急 */
+      --green:#22c55e;  /* 普通 */
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 28px 16px 44px;
+    }
+
+    .wrap{max-width:1120px;margin:0 auto}
+
+    header{
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      margin-bottom:16px;
+    }
+
+    h1{font-size:20px;margin:0}
+    .sub{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:flex-end;
+    }
+
+    textarea{
+      width: min(520px, 100%);
+      min-height: 78px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 13px;
+      resize:vertical;
+      outline:none;
+    }
+
+    select, button{
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:13px;
+      border:1px solid var(--border);
+      background:#fff;
+      color: var(--text);
+      outline:none;
+    }
+
+    button{
+      cursor:pointer;
+      transition: transform .05s ease, background .15s ease, opacity .15s ease;
+    }
+    button:active{transform: translateY(1px)}
+    button:hover{background:#fafafa}
+
+    button.danger{
+      border-color:#f3b4b4;
+      background:#fff5f5;
+    }
+    button.danger:hover{background:#ffecec}
+
+    .stat{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      color: var(--muted);
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+      white-space:nowrap;
+    }
+
+    .board{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+    @media (max-width: 980px){
+      .board{grid-template-columns: repeat(2, 1fr);}
+      .controls{justify-content:flex-start}
+    }
+    @media (max-width: 560px){
+      .board{grid-template-columns: 1fr;}
+    }
+
+    .col{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      min-height: 380px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .col-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .col-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .pill{
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #999;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.03);
+    }
+
+    .count{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding: 4px 2px 2px;
+      flex:1;
+    }
+
+    .drop-zone{
+      border-radius: 14px;
+      min-height: 60px;
+      padding: 2px;
+      flex:1;
+    }
+    .drop-zone.over{
+      outline: 2px dashed rgba(0,0,0,.22);
+      outline-offset: 3px;
+      background: rgba(0,0,0,.02);
+    }
+
+    .item{
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 10px;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      cursor: grab;
+      user-select:none;
+    }
+    .item:active{cursor: grabbing}
+    .item.dragging{
+      opacity:.55;
+      transform: scale(.99);
+    }
+    .item.drop-hint{
+      outline: 2px dashed rgba(0,0,0,.25);
+      outline-offset: 2px;
+    }
+
+    .check{
+      margin-top: 2px;
+      width: 18px;
+      height: 18px;
+      cursor:pointer;
+      accent-color: rgba(0,0,0,.75);
+    }
+
+    .text{
+      flex:1;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .meta{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      align-items:flex-end;
+      margin-left: 6px;
+    }
+
+    .tag{
+      font-size: 11px;
+      color: rgba(0,0,0,.65);
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.03);
+      white-space:nowrap;
+    }
+
+    .btn-dots{
+      width: 30px;
+      height: 26px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.03);
+      cursor:pointer;
+      font-size: 16px;
+      line-height: 1;
+      color: rgba(0,0,0,.65);
+    }
+    .btn-dots:hover{background: rgba(0,0,0,.05)}
+
+    /* 完成態：字變灰 */
+    .done{
+      opacity: .35;
+    }
+    .done .text{
+      text-decoration: line-through;
+    }
+
+    /* 每欄的色 */
+    .col[data-cat="urgent"] .pill{background: var(--purple)}
+    .col[data-cat="ideal"]  .pill{background: var(--red)}
+    .col[data-cat="important"] .pill{background: var(--orange)}
+    .col[data-cat="normal"] .pill{background: var(--green)}
+
+    .col[data-cat="urgent"] .tag{border-color: rgba(124,58,237,.35)}
+    .col[data-cat="ideal"]  .tag{border-color: rgba(239,68,68,.35)}
+    .col[data-cat="important"] .tag{border-color: rgba(245,158,11,.35)}
+    .col[data-cat="normal"] .tag{border-color: rgba(34,197,94,.35)}
+
+    .footer-note{
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height:1.6;
+    }
+    code{color: rgba(0,0,0,.70)}
+
+    /* 編輯 Modal */
+    .modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal{
+      width: min(520px, 100%);
+      background:#fff;
+      border-radius: 16px;
+      border:1px solid var(--border);
+      box-shadow: 0 12px 50px rgba(0,0,0,.18);
+      padding: 14px;
+    }
+    .modal h2{
+      margin:0 0 10px;
+      font-size: 14px;
+    }
+    .modal .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+      margin-top: 10px;
+    }
+    .modal textarea{
+      width:100%;
+      min-height: 96px;
+    }
+    .modal .danger{
+      background:#fff5f5;
+      border-color:#f3b4b4;
+    }
+  
+    /* ===== 美化：欄位底色漸層（像圖2） ===== */
+    .wrap{max-width:1400px}
+
+    .col{
+      border: 1px solid rgba(0,0,0,.08);
+      box-shadow: 0 16px 40px rgba(0,0,0,.06);
+      overflow:hidden;
+      padding: 14px 14px 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.92) 22%, rgba(255,255,255,.75) 100%);
+    }
+    .col-head{
+      border-bottom: 1px solid rgba(0,0,0,.08);
+      padding-bottom: 10px;
+    }
+    .drop-zone{padding: 6px 4px 4px}
+
+    /* 欄位配色（更柔的粉彩） */
+    .col[data-cat="urgent"]{
+      background: linear-gradient(180deg, rgba(124,58,237,.18) 0%, rgba(124,58,237,.10) 35%, rgba(124,58,237,.06) 100%);
+    }
+    .col[data-cat="ideal"]{
+      background: linear-gradient(180deg, rgba(239,68,68,.18) 0%, rgba(239,68,68,.10) 35%, rgba(239,68,68,.06) 100%);
+    }
+    .col[data-cat="important"]{
+      background: linear-gradient(180deg, rgba(245,158,11,.20) 0%, rgba(245,158,11,.11) 35%, rgba(245,158,11,.06) 100%);
+    }
+    .col[data-cat="normal"]{
+      background: linear-gradient(180deg, rgba(34,197,94,.18) 0%, rgba(34,197,94,.10) 35%, rgba(34,197,94,.06) 100%);
+    }
+
+    /* ===== 卡片更像圖2：更大圓角 + 柔陰影 + 內發光 ===== */
+    .item{
+      border-radius: 18px;
+      padding: 12px 12px;
+      border: 1px solid rgba(0,0,0,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.78) 100%);
+      box-shadow:
+        0 12px 26px rgba(0,0,0,.08),
+        inset 0 1px 0 rgba(255,255,255,.9);
+    }
+    .item:hover{
+      box-shadow:
+        0 16px 34px rgba(0,0,0,.10),
+        inset 0 1px 0 rgba(255,255,255,.92);
+    }
+
+    /* checkbox 跟內容的距離、字行距微調 */
+    .check{margin-top: 3px}
+    .text{font-size: 13px; line-height: 1.55}
+
+    /* Tag 改成更像圖2那種淡色膠囊 */
+    .tag{
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(0,0,0,.08);
+      color: rgba(0,0,0,.60);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+    }
+
+    /* ...按鈕更像浮起來 */
+    .btn-dots{
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(0,0,0,.10);
+      box-shadow: 0 6px 14px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.85);
+    }
+    .btn-dots:hover{background: rgba(255,255,255,.70)}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>阿梅備忘錄</h1>
+        <div class="sub">
+          輸入待辦（可一次貼多行）→ 選分類 → 加入。可勾選完成（變灰），也可拖拉跨欄位移動並排序。<br/>
+          資料會保存在瀏覽器（localStorage）。
+        </div>
+      </div>
+
+      <div class="controls">
+        <textarea id="input" placeholder="一次可貼很多行（每行一個待辦）"></textarea>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+          <select id="category">
+            <option value="urgent">今日緊急</option>
+            <option value="ideal">理想進度</option>
+            <option value="important">重要</option>
+            <option value="normal" selected>普通</option>
+          </select>
+
+          <button id="addBtn">加入清單</button>
+          <button id="moveNormalBtn">普通 → 今日緊急</button>
+          <button id="exportBtn">匯出 JSON</button>
+          <button id="importBtn">匯入 JSON</button>
+          <button id="clearDoneBtn" class="danger">清除已完成</button>
+
+          <div class="stat" id="todayCount">今日完成：0 項</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="board" id="board"></div>
+
+    <div class="footer-note">
+      小提示：拖拉時把卡片拖到另一欄「空白區」就會移到該欄底部；拖到某張卡片上會插到它上面。<br/>
+      如果你想要「拖拉手把」或「鍵盤快速移動」我也可以再加。
+    </div>
+  </div>
+
+  <!-- 編輯 Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2>編輯待辦</h2>
+      <textarea id="editText"></textarea>
+      <div class="row">
+        <button id="editCancelBtn">取消</button>
+        <button id="editDeleteBtn" class="danger">刪除</button>
+        <button id="editSaveBtn">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "ame_memo_v2";
+
+    const CATS = [
+      { id:"urgent",   name:"今日緊急",     color:"紫色" },
+      { id:"ideal",    name:"理想進度",     color:"紅色" },
+      { id:"important",name:"重要非緊急",   color:"橙色" },
+      { id:"normal",   name:"普通",         color:"綠色" }
+    ];
+
+    /** state:
+     * { urgent:[{id,text,done,createdAt,completedAt}], ideal:[], important:[], normal:[] }
+     */
+    let state = loadState();
+
+    const inputEl = document.getElementById("input");
+    const catEl = document.getElementById("category");
+    const addBtn = document.getElementById("addBtn");
+    const moveNormalBtn = document.getElementById("moveNormalBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const importBtn = document.getElementById("importBtn");
+    const clearDoneBtn = document.getElementById("clearDoneBtn");
+
+    const boardEl = document.getElementById("board");
+    const todayCountEl = document.getElementById("todayCount");
+
+    // modal
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const editText = document.getElementById("editText");
+    const editCancelBtn = document.getElementById("editCancelBtn");
+    const editDeleteBtn = document.getElementById("editDeleteBtn");
+    const editSaveBtn = document.getElementById("editSaveBtn");
+    let editing = null; // {catId, itemId}
+
+    function uid(){
+      return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+    }
+
+    function emptyState(){
+      const s = {};
+      for(const c of CATS) s[c.id] = [];
+      return s;
+    }
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return emptyState();
+        const parsed = JSON.parse(raw);
+        const base = emptyState();
+        for(const c of CATS){
+          base[c.id] = Array.isArray(parsed[c.id]) ? parsed[c.id] : [];
+        }
+        return base;
+      }catch{
+        return emptyState();
+      }
+    }
+
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function catLabel(catId){
+      const c = CATS.find(x => x.id === catId);
+      return c ? `${c.name}（${c.color}）` : catId;
+    }
+
+    function isToday(ts){
+      if(!ts) return false;
+      const d = new Date(ts);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear()
+        && d.getMonth() === now.getMonth()
+        && d.getDate() === now.getDate();
+    }
+
+    function render(){
+      boardEl.innerHTML = "";
+
+      let todayDone = 0;
+      for(const c of CATS){
+        for(const t of state[c.id]){
+          if(t.done && isToday(t.completedAt)) todayDone++;
+        }
+      }
+      todayCountEl.textContent = `今日完成：${todayDone} 項`;
+
+      for(const cat of CATS){
+        const col = document.createElement("div");
+        col.className = "col";
+        col.dataset.cat = cat.id;
+
+        const head = document.createElement("div");
+        head.className = "col-head";
+
+        const title = document.createElement("div");
+        title.className = "col-title";
+        title.innerHTML = `<span class="pill"></span><span>${cat.name}</span>`;
+
+        const count = document.createElement("div");
+        count.className = "count";
+        const doneCount = state[cat.id].filter(t => t.done).length;
+        count.textContent = `${state[cat.id].length}（完成 ${doneCount}）`;
+
+        head.appendChild(title);
+        head.appendChild(count);
+
+        const dropZone = document.createElement("div");
+        dropZone.className = "drop-zone";
+        dropZone.dataset.cat = cat.id;
+
+        const list = document.createElement("div");
+        list.className = "list";
+        list.dataset.cat = cat.id;
+
+        for(const item of state[cat.id]){
+          list.appendChild(renderItem(cat.id, item));
+        }
+
+        dropZone.appendChild(list);
+
+        // drop on empty area => move to end
+        dropZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          dropZone.classList.add("over");
+        });
+        dropZone.addEventListener("dragleave", () => dropZone.classList.remove("over"));
+        dropZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dropZone.classList.remove("over");
+          const payload = safeParse(e.dataTransfer.getData("text/plain"));
+          if(!payload) return;
+          moveItem(payload.fromCat, payload.itemId, cat.id, null);
+        });
+
+        col.appendChild(head);
+        col.appendChild(dropZone);
+        boardEl.appendChild(col);
+      }
+    }
+
+    function safeParse(raw){
+      try{ return JSON.parse(raw); }catch{ return null; }
+    }
+
+    function renderItem(catId, item){
+      const row = document.createElement("div");
+      row.className = "item" + (item.done ? " done" : "");
+      row.draggable = true;
+      row.dataset.cat = catId;
+      row.dataset.id = item.id;
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "check";
+      checkbox.checked = !!item.done;
+      checkbox.addEventListener("change", () => {
+        item.done = checkbox.checked;
+        item.completedAt = item.done ? Date.now() : null;
+        saveState();
+        render();
+      });
+
+      const text = document.createElement("div");
+      text.className = "text";
+      text.textContent = item.text;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+
+
+      const dots = document.createElement("button");
+      dots.className = "btn-dots";
+      dots.type = "button";
+      dots.title = "編輯/刪除";
+      dots.textContent = "⋯";
+      dots.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openEdit(catId, item.id);
+      });
+
+      meta.appendChild(dots);
+
+      row.appendChild(checkbox);
+      row.appendChild(text);
+      row.appendChild(meta);
+
+      // Drag start/end
+      row.addEventListener("dragstart", (e) => {
+        row.classList.add("dragging");
+        e.dataTransfer.setData("text/plain", JSON.stringify({ fromCat: catId, itemId: item.id }));
+        e.dataTransfer.effectAllowed = "move";
+      });
+      row.addEventListener("dragend", () => row.classList.remove("dragging"));
+
+      // Drop on item => insert before it (supports cross-column)
+      row.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        row.classList.add("drop-hint");
+      });
+      row.addEventListener("dragleave", () => row.classList.remove("drop-hint"));
+      row.addEventListener("drop", (e) => {
+        e.preventDefault();
+        row.classList.remove("drop-hint");
+        const payload = safeParse(e.dataTransfer.getData("text/plain"));
+        if(!payload) return;
+        moveItem(payload.fromCat, payload.itemId, catId, item.id);
+      });
+
+      return row;
+    }
+
+    function moveItem(fromCat, itemId, toCat, beforeItemId){
+      if(!fromCat || !toCat) return;
+      const fromList = state[fromCat];
+      const idx = fromList.findIndex(t => t.id === itemId);
+      if(idx === -1) return;
+
+      const [item] = fromList.splice(idx, 1);
+      const toList = state[toCat];
+
+      if(beforeItemId){
+        const beforeIdx = toList.findIndex(t => t.id === beforeItemId);
+        if(beforeIdx === -1) toList.push(item);
+        else toList.splice(beforeIdx, 0, item);
+      }else{
+        toList.push(item);
+      }
+
+      saveState();
+      render();
+    }
+
+    function addItems(){
+      const raw = (inputEl.value || "").trim();
+      if(!raw) return;
+
+      const lines = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      const cat = catEl.value;
+
+      for(const line of lines){
+        state[cat].push({
+          id: uid(),
+          text: line,
+          done: false,
+          createdAt: Date.now(),
+          completedAt: null
+        });
+      }
+
+      inputEl.value = "";
+      saveState();
+      render();
+    }
+
+    function clearDone(){
+      for(const cat of CATS){
+        state[cat.id] = state[cat.id].filter(t => !t.done);
+      }
+      saveState();
+      render();
+    }
+
+    function moveNormalToUrgent(){
+      const moving = state.normal.filter(t => !t.done);
+      state.normal = state.normal.filter(t => t.done);
+      state.urgent.push(...moving);
+      saveState();
+      render();
+    }
+
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "ame-memo-backup.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importJSON(){
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json,application/json";
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try{
+            const parsed = JSON.parse(reader.result);
+            const base = emptyState();
+            for(const c of CATS){
+              base[c.id] = Array.isArray(parsed[c.id]) ? parsed[c.id] : [];
+            }
+            if(confirm("匯入會覆蓋目前清單，確定要匯入嗎？")){
+              state = base;
+              saveState();
+              render();
+            }
+          }catch{
+            alert("這個檔案不是正確的 JSON 備份格式。");
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    // modal edit
+    function openEdit(catId, itemId){
+      const item = state[catId].find(t => t.id === itemId);
+      if(!item) return;
+      editing = { catId, itemId };
+      editText.value = item.text;
+      modalBackdrop.style.display = "flex";
+      editText.focus();
+      editText.setSelectionRange(editText.value.length, editText.value.length);
+    }
+
+    function closeEdit(){
+      modalBackdrop.style.display = "none";
+      editing = null;
+      editText.value = "";
+    }
+
+    function saveEdit(){
+      if(!editing) return;
+      const { catId, itemId } = editing;
+      const item = state[catId].find(t => t.id === itemId);
+      if(!item) { closeEdit(); return; }
+      item.text = (editText.value || "").trim();
+      if(!item.text){
+        // 空字就當刪除
+        state[catId] = state[catId].filter(t => t.id !== itemId);
+      }
+      saveState();
+      render();
+      closeEdit();
+    }
+
+    function deleteEdit(){
+      if(!editing) return;
+      const { catId, itemId } = editing;
+      state[catId] = state[catId].filter(t => t.id !== itemId);
+      saveState();
+      render();
+      closeEdit();
+    }
+
+    // events
+    addBtn.addEventListener("click", addItems);
+    inputEl.addEventListener("keydown", (e) => {
+      if((e.ctrlKey || e.metaKey) && e.key === "Enter") addItems();
+    });
+
+    moveNormalBtn.addEventListener("click", moveNormalToUrgent);
+    exportBtn.addEventListener("click", exportJSON);
+    importBtn.addEventListener("click", importJSON);
+    clearDoneBtn.addEventListener("click", clearDone);
+
+    modalBackdrop.addEventListener("click", (e) => {
+      if(e.target === modalBackdrop) closeEdit();
+    });
+    editCancelBtn.addEventListener("click", closeEdit);
+    editSaveBtn.addEventListener("click", saveEdit);
+    editDeleteBtn.addEventListener("click", deleteEdit);
+    window.addEventListener("keydown", (e) => {
+      if(modalBackdrop.style.display === "flex"){
+        if(e.key === "Escape") closeEdit();
+        if((e.ctrlKey || e.metaKey) && e.key === "Enter") saveEdit();
+      }
+    });
+
+    // init
+    render();
+  </script>
+</body>
+</html>

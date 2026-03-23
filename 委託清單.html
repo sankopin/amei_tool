@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>阿梅委託管理清單</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#f6f7f7;
+    --panel:#fff;
+    --border:#e7eaec;
+    --text:#222;
+    --muted:#666;
+    --accent:#2fb36a;
+    --accent2:#e9f8f0;
+
+    /* ⭐ 你要改「間距」主要改這三個： */
+    --form-gap: 12px;   /* 上方輸入區每格距離 */
+    --cell-pad: 10px;   /* 表格每格內距（越大越鬆） */
+    --row-gap: 0px;     /* 表格列與列之間（一般用不到） */
+  }
+/* === 表格欄寬（讓幾個欄位不要撐太寬） === */
+th.col-contact, td.col-contact{ width: 120px; }
+th.col-data, td.col-data{ width: 120px; }
+th.col-days, td.col-days{ width: 92px; text-align:center; }
+th.col-pay, td.col-pay{ width: 150px; }
+td.col-pay select{ width: 120px; }
+
+.td-wide{
+  width: 150px;
+  min-width: 150px;
+  white-space: normal;
+}
+
+th.col-contact, td.col-contact{ width: 120px; }
+th.col-days, td.col-days{ width: 80px; text-align:center; }
+th.col-pay, td.col-pay{ width: 130px; }
+  body{
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:var(--bg);
+    margin:0;
+    padding:24px;
+    color:var(--text);
+  }
+  h1{ margin:0 0 16px; font-size:20px; }
+
+  .card{
+    background:var(--panel);
+    border-radius:16px;
+    padding:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,.06);
+    margin-bottom:20px;
+    border: 1px solid var(--border);
+  }
+
+  .form{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap: var(--form-gap);
+  }
+  .form label{
+    font-size:12px;
+    color:#555;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  input, select{
+    padding:9px 10px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    font-size:13px;
+    background:#fff;
+  }
+  input:focus, select:focus{
+    outline:none;
+    border-color: rgba(47,179,106,.55);
+    box-shadow: 0 0 0 4px rgba(47,179,106,.14);
+  }
+
+  .row-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  button{
+    padding:10px 14px;
+    border-radius:999px;
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    font-weight:800;
+    cursor:pointer;
+  }
+  button.secondary{
+    background:#fff;
+    color:#333;
+    border:1px solid var(--border);
+  }
+  button.danger{
+    background:#fff;
+    color:#b42318;
+    border:1px solid rgba(180,35,24,.25);
+  }
+
+  .hint{
+    font-size:12px;
+    color:rgba(0,0,0,.55);
+  }
+
+  table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing: 0 var(--row-gap);
+    font-size:13px;
+  }
+  th, td{
+    padding: var(--cell-pad);
+    border-bottom:1px solid #eee;
+    text-align:left;
+    vertical-align:middle;
+    white-space: nowrap;
+  }
+  th{
+    background:#fafafa;
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+
+  tr.done{
+    color:#aaa;
+    background:#fcfcfc;
+  }
+
+  a{ color:var(--accent); text-decoration:none; }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:12px;
+    background:var(--accent2);
+    color:#1f6b41;
+    font-weight:800;
+    border: 1px solid rgba(47,179,106,.18);
+  }
+
+  .mini{
+    width: auto;
+    min-width: 0;
+    max-width: 220px;
+  }
+  .linkrow{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .btn-mini{
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: 900;
+    background:#fff;
+    border:1px solid var(--border);
+    cursor:pointer;
+  }
+  .btn-mini:hover{ background:#fafafa; }
+
+  .btn-icon{
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 900;
+    background:#fff;
+    border:1px solid var(--border);
+    cursor:pointer;
+  }
+  .btn-icon:hover{ background:#fafafa; }
+
+  .table-wrap{
+    overflow:auto;
+    border-radius: 14px;
+  }
+tr.urgent{
+  background: rgba(220,38,38,.06); /* 紅 */
+}
+tr.warning{
+  background: rgba(234,179,8,.08); /* 橘 */
+}
+
+
+  /* === Notion-ish table feel === */
+
+  .col-narrow-center{ text-align:center; }
+  td.col-narrow-center{ text-align:center; }
+
+  .table-wrap{
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  table{
+    table-layout: fixed;          /* key: avoid weird auto stretching */
+  }
+  th, td{
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;      /* show ... when too long */
+  }
+  td.td-wide, th.td-wide{
+    white-space: normal;          /* allow wrap for the "資料" column if needed */
+  }
+/* 表格內可編輯數字（價格/訂金） */
+.tbl-input{
+  width: 50px;
+  max-width: 50px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+}
+/* 付款狀態顏色 */
+.paypill{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  border:1px solid transparent;
+  white-space:nowrap;
+}
+.pay-unpaid{
+  background: rgba(220,38,38,.12);
+  border-color: rgba(220,38,38,.25);
+  color: rgb(153,27,27);
+}
+.pay-deposit{
+  background: rgba(37,99,235,.12);
+  border-color: rgba(37,99,235,.25);
+  color: rgb(29,78,216);
+}
+.pay-paid{
+  background: rgba(22,163,74,.12);
+  border-color: rgba(22,163,74,.25);
+  color: rgb(21,128,61);
+}
+/* 表格在 iframe 內縮小一點 */
+table th,
+table td{
+  padding: 8px 8px;   /* 原本大概 12~16，這裡縮 */
+  font-size: 12px;
+}
+.pill{
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 999px;
+}
+.tbl-input{
+  width: 50px;
+  max-width: 50px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.tbl-note{
+  width: 125px;
+  max-width: 125px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.paypill{
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.col-pay select{
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.btn-order{
+  padding: 4px 6px;
+  font-size: 11px;
+  border-radius: 8px;
+}
+/* 付款狀態：讓 select 本身像彩色按鈕（單一元件，不會兩排） */
+.col-pay select{
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 6px 28px 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid transparent;
+  cursor: pointer;
+  line-height: 1;
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 10px;
+  /* 小小下拉箭頭（純 CSS） */
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(0,0,0,.45) 50%),
+    linear-gradient(135deg, rgba(0,0,0,.45) 50%, transparent 50%);
+  background-position:
+    right 12px center,
+    right 7px center;
+  background-size:
+    6px 6px,
+    6px 6px;
+}
+
+/* 依狀態套色（我們會在 JS 幫 select 加 class） */
+.col-pay select.pay-unpaid{
+  background-color: rgba(220,38,38,.12);
+  border-color: rgba(220,38,38,.25);
+  color: rgb(153,27,27);
+}
+.col-pay select.pay-deposit{
+  background-color: rgba(37,99,235,.12);
+  border-color: rgba(37,99,235,.25);
+  color: rgb(29,78,216);
+}
+.col-pay select.pay-paid{
+  background-color: rgba(22,163,74,.12);
+  border-color: rgba(22,163,74,.25);
+  color: rgb(21,128,61);
+}
+/* === 完成列：整排醒目色全部變灰 === */
+tr.done{
+  color:#aaa;
+  background:#fcfcfc;
+}
+
+/* 倒數 pill 變灰 */
+tr.done .pill{
+  background: #f2f3f4;
+  border-color: #dedfe2;
+  color: #9aa0a6;
+}
+
+/* 付款狀態 select（原本有紅/藍/綠 class）全部覆蓋成灰 */
+tr.done .col-pay select,
+tr.done .col-pay select.pay-unpaid,
+tr.done .col-pay select.pay-deposit,
+tr.done .col-pay select.pay-paid{
+  background-color: #f2f3f4 !important;
+  border-color: #dedfe2 !important;
+  color: #9aa0a6 !important;
+}
+
+/* 各種按鈕、修改、刪除、上下移 都變灰 */
+tr.done button{
+  background: #f2f3f4 !important;
+  border: 1px solid #dedfe2 !important;
+  color: #9aa0a6 !important;
+  box-shadow: none !important;
+}
+
+/* 連結也變灰（開啟資料/聯絡） */
+tr.done a{
+  color: #9aa0a6 !important;
+}
+
+/* input 框也變灰一點（訂金/價格/備註） */
+tr.done input{
+  background: #fafafa;
+  border-color: #e6e6e6;
+  color: #9aa0a6;
+}
+.month-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin: 10px 0 12px;
+}
+.month-tab{
+  border:1px solid #e5e7eb;
+  background:#fff;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+  color: rgba(0,0,0,.70);
+}
+.month-tab.active{
+  border-color: rgba(110,180,135,.55);
+  background: rgba(110,180,135,.10);
+}
+.month-tab:hover{
+  background:#f7f7f7;
+}
+.month-income{
+  margin: 10px 0 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(110,180,135,.10);
+  border: 1px solid rgba(110,180,135,.30);
+  font-weight: 900;
+  color: rgba(0,0,0,.75);
+  font-size: 14px;
+  display: inline-block;
+}
+/* 日期欄位要更寬，不然只顯示年月 */
+input[type="date"].tbl-input{
+  width: 100px !important;
+  max-width: 100px !important;
+}
+/* ✅ 付款狀態：跟著欄寬縮放，不要固定 120px */
+td.col-pay select{
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  padding: 4px 6px;      /* 想再小就改這裡 */
+  font-size: 12px;       /* 想再小就改這裡 */
+}
+
+/* ✅ 防止表格欄位內容撐爆 */
+td.col-pay{
+  overflow: hidden;
+}
+/* ✅ 備份 */
+.backup-status{
+  margin: 8px 0 14px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(167,142,220,.10);
+  border: 1px solid rgba(167,142,220,.28);
+  font-weight: 800;
+  color: rgba(0,0,0,.70);
+  font-size: 12px;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+}
+.backup-status button{
+  border: 1px solid rgba(0,0,0,.12);
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.backup-status button:hover{ background:#f7f7f7; }
+.backup-restore-btn{
+  background: rgba(164,43,57,.12); /* 淺紅背景（可換）*/
+  border: 1px solid rgba(164,43,57,.35);
+  color: rgb(164,43,57);           /* 文字深紅 */
+  font-weight: 900;
+  border-radius: 8px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.backup-restore-btn:hover{
+  background: rgba(164,43,57,.18);
+}
+/* 排序按鈕（白底＋紫色 icon） */
+.btn-order{
+  background: #fff !important;
+  border: 1px solid rgba(167,142,220,.45);
+  color: rgb(167,142,220) !important;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 900;
+  text-align: center;
+  line-height: 26px;
+  padding: 0;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.btn-order:hover{
+  background: rgba(167,142,220,.12) !important;
+}
+
+/* hover 效果：淡淡紫底 */
+.btn-order:hover{
+  background: rgba(167,142,220,.12) !important;
+  border-color: rgba(167,142,220,.65);
+}
+
+.contact-edit{
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.15);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.contact-edit:hover{
+  background: rgba(167,142,220,.12);
+  border-color: rgba(167,142,220,.45);
+  color: rgb(167,142,220);
+}
+
+.contact-text{
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 聯絡欄專用：不要換行，避免行高被撐高 */
+.linkrow-contact{
+  flex-wrap: nowrap !important;
+}
+
+/* 連結太長就省略，不要把 ✎ 擠到下一行 */
+.linkrow-contact a,
+.linkrow-contact span{
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 你的全域 button 可能是白字，這裡把 ✎ 文字改回可見 */
+.contact-edit{
+  background:#fff !important;
+  border:1px solid rgba(0,0,0,.15);
+  color: rgb(167,142,220) !important; /* 紫色 icon */
+}
+/* 讓 td 回到 table-cell，避免行高錯位 */
+td.col-contact{
+  display: table-cell !important;
+  vertical-align: middle;
+}
+
+/* 真正需要 flex 的放在內層 */
+.linkrow-contact{
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  gap: 6px;
+}
+
+/* 文字太長就省略，不要擠高 */
+.linkrow-contact a,
+.linkrow-contact span{
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ✎ 按鈕永遠不要被壓縮 */
+.linkrow-contact button{
+  flex: 0 0 auto;
+}
+/* ✅ 滑過整列高亮：你就知道自己在哪一行 */
+#list tr:hover{
+  background: rgba(167,142,220,.16) !important;
+}
+.card-list{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.card{
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 14px;
+  background: rgba(255,255,255,.85);
+  box-shadow: 0 8px 18px rgba(0,0,0,.06);
+  padding: 12px;
+  transition: 
+      transform .18s ease,
+      box-shadow .18s ease,
+      background .18s ease;
+}
+
+.card-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom: 8px;
+}
+
+.card-name{
+  font-weight: 900;
+  font-size: 18px;
+  color: rgb(167,142,220); /* 你的紫色主色 */
+  letter-spacing: .5px;
+  text-shadow: 0 1px 0 rgba(255,255,255,.6);
+}
+
+.card-pill{
+  margin-left:auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(0,0,0,.06);
+}
+
+.card-row{
+  display:flex;
+  gap:8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: rgba(0,0,0,.72);
+}
+/* 滑過高亮 */
+#cardList .card:hover{
+   background: rgba(255,255,255,.9); /* 幾乎不變色 */
+  border-color: rgba(167,142,220,.7);
+  box-shadow: 0 12px 28px rgba(0,0,0,.12);
+  transform: translateY(-4px);
+}
+.card-row b{ color: rgba(0,0,0,.9); }
+
+.card.urgent{ border-color: rgba(164,43,57,.35); background: rgba(164,43,57,.06); }
+.card.warning{ border-color: rgba(231,179,34,.35); background: rgba(231,179,34,.08); }
+.card.done{ opacity:.6; filter: grayscale(.2); }
+.view-switch{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin: 0 10px;
+}
+
+.view-btn{
+  color: #222;
+  border:1px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.8);
+  padding:5px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+
+.view-btn:hover{
+  background: rgba(167,142,220,.18);
+  border-color: rgba(167,142,220,.6);
+}
+
+.view-btn.active{
+  background: rgba(167,142,220,.35);
+  border-color: rgba(167,142,220,.8);
+}
+
+</style>
+</head>
+<body>
+
+<h1>阿梅委託管理清單</h1>
+
+<div class="card">
+  <div class="form">
+    <label>委託人暱稱
+      <input id="name" placeholder="例如：阿花/匿名A">
+    </label>
+
+    <label>聯絡方式
+      <select id="contactType">
+        <option>Facebook</option>
+        <option>Plurk</option>
+      </select>
+    </label>
+
+    <label>聯絡方式網址
+      <input id="contactUrl" placeholder="https://...">
+    </label>
+
+    <label>委託項目
+      <!-- ✅ 可輸入 + 有預設選項 -->
+      <input id="item" list="itemOptions" placeholder="可選或自行輸入">
+      <datalist id="itemOptions">
+        <option value="大頭"></option>
+        <option value="半身"></option>
+        <option value="立繪"></option>
+        <option value="組合頁A"></option>
+        <option value="組合頁B"></option>
+        <option value="性轉組合頁"></option>
+        <option value="迷你Q"></option>
+      </datalist>
+    </label>
+
+    <label>委託資料（網址）
+      <input id="dataUrl" placeholder="https://...">
+    </label>
+
+    <label>月份
+      <select id="month"></select>
+    </label>
+
+    <label>開工日（可不填）
+      <input type="date" id="start">
+    </label>
+
+    <label>DDL（建議必填）
+      <input type="date" id="ddl">
+    </label>
+
+    <label>訂金（可不填）
+      <input id="deposit" placeholder="例如：500">
+    </label>
+
+    <label>價格
+      <input id="price" placeholder="例如：1500">
+    </label>
+
+    <label>付款狀態
+      <select id="pay">
+        <option>未付款</option>
+        <option>已付訂金</option>
+        <option>已付清</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="row-actions">
+    <button type="button" onclick="addRow()">新增委託</button>
+<button type="button" class="secondary" onclick="toggleSortMode()">切換排序</button>
+<span id="sortModeBadge" class="hint"
+  style="padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;">
+  依 DDL 自動排序
+</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+  <div id="monthTabs" class="month-tabs"></div>
+    <table>
+      <colgroup>
+        <col style="width:70px">   <!-- 順序 -->
+        <col style="width:70px">  <!-- 委託人 -->
+        <col style="width:120px">   <!-- 聯絡 -->
+        <col style="width:110px">  <!-- 項目 -->
+        <col style="width:140px">  <!-- 委託資料 -->
+        <col style="width:130px">  <!-- 開工 -->
+        <col style="width:130px">  <!-- DDL -->
+        <col style="width:90px">   <!-- 倒數 (窄) -->
+        <col style="width:80px">   <!-- 訂金 -->
+        <col style="width:90px">   <!-- 價格 -->
+        <col style="width:100px">  <!-- 付款狀態 -->
+        <col style="width:160px">  <!-- 備註  -->
+        <col style="width:70px">   <!-- 草稿 (窄) -->
+        <col style="width:70px">   <!-- 完成 (窄) -->
+        <col style="width:80px">   <!-- 刪除 (窄) -->
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="col-narrow-center">順序</th>
+          <th>委託人</th>
+          <th class="col-contact">聯絡</th>
+          <th>項目</th>
+          <th class="col-data">委託資料</th>
+          <th>開工</th>
+          <th>DDL</th>
+          <th class="col-days">倒數</th>
+          <th>訂金</th>
+          <th>價格</th>
+          <th class="col-pay">付款狀態</th>
+          <th>備註</th>
+          <th class="col-narrow-center">草稿</th>
+          <th class="col-narrow-center">完成</th>
+          <th class="col-narrow-center">刪除</th>
+        </tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
+  </div>
+<div id="cardList" class="card-list" style="display:none;"></div>
+<div id="monthIncome" class="month-income"></div>
+<div id="backupStatus" class="backup-status"></div>
+<div class="view-switch">
+  <button type="button" class="view-btn" onclick="setViewMode('table')">表格</button>
+  <button type="button" class="view-btn" onclick="setViewMode('card')">卡片</button>
+</div>
+</div>
+
+<script>
+  const STORAGE_KEY = "ame_commissions";
+  const VIEWMODE_KEY = STORAGE_KEY + "__view_mode"; // "table" | "card"
+let viewMode = (localStorage.getItem(VIEWMODE_KEY) || "table");
+
+  function setViewMode(m){
+    viewMode = m;
+    try{ localStorage.setItem(VIEWMODE_KEY, m); }catch(e){}
+    render();
+}
+  const SORTMODE_KEY = "ame_commissions_sort_mode"; // "ddl" | "manual"
+
+  let data = loadData();
+  let sortMode = loadSortMode();
+  const KEY_ACTIVE_MONTH = "ame_commission_active_month";
+let activeMonth = ""; // 例如 "2026-01"
+
+  function loadSortMode(){
+    try{ return localStorage.getItem(SORTMODE_KEY) || "ddl"; }
+    catch(e){ return "ddl"; }
+  }
+  function saveSortMode(){
+    try{ localStorage.setItem(SORTMODE_KEY, sortMode); }catch(e){}
+  }
+
+  function loadData(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return arr.map(x => ({
+        name: x.name ?? "",
+        contactType: x.contactType ?? "Facebook",
+        contactUrl: x.contactUrl ?? "",
+        item: x.item ?? "",
+        dataUrl: x.dataUrl ?? "",
+        start: x.start ?? "",
+        ddl: x.ddl ?? "",
+        deposit: x.deposit ?? "",
+        price: x.price ?? "",
+        pay: x.pay ?? "未付款",
+        note: x.note ?? "",
+        done: !!x.done,
+        month: x.month ?? "",
+        draft: !!x.draft
+      }));
+    }catch(e){
+      return [];
+    }
+  }
+
+  function saveData(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    backupNow(); // ✅ 每次存檔順便備份
+  }
+const BACKUP_KEY = STORAGE_KEY + "__backup";
+const BACKUP_TS_KEY = STORAGE_KEY + "__backup_ts";
+
+function nowTsStr(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function backupNow(){
+  try{
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(data));
+    localStorage.setItem(BACKUP_TS_KEY, nowTsStr());
+  }catch(e){
+    console.warn("備份失敗", e);
+  }
+  renderBackupStatus();
+}
+
+function renderBackupStatus(){
+  const el = document.getElementById("backupStatus");
+  if(!el) return;
+  const ts = localStorage.getItem(BACKUP_TS_KEY);
+  el.innerHTML = `💾 自動備份：${ts ? ts : "尚未備份"}<button type="button" class="backup-restore-btn" onclick="restoreFromBackup()">還原備份</button>`;
+
+}
+
+function restoreFromBackup(){
+  const raw = localStorage.getItem(BACKUP_KEY);
+  if(!raw) return alert("沒有找到備份。");
+  if(!confirm("⚠️ 你確定要還原備份嗎？目前資料會被取代。")) return;
+  try{
+    data = JSON.parse(raw);
+    saveData(); // 會再次備份（等於產生新的備份時間）
+    (typeof safeRender === "function") ? safeRender() : render();
+    alert("已還原備份 ✅");
+  }catch(e){
+    console.error(e);
+    alert("備份格式錯誤，無法還原。");
+  }
+}
+
+  function daysLeft(ddl){
+    if(!ddl) return null;
+    const d = new Date(ddl + "T00:00:00");
+    if(Number.isNaN(d.getTime())) return null;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diff = d - today;
+    return Math.ceil(diff / 86400000);
+  }
+
+  function payOptions(current){
+    const opts = ["未付款","已付訂金","已付清"];
+    return opts.map(o => `<option ${o===current?"selected":""}>${o}</option>`).join("");
+  }
+  function payClass(pay){
+    if(pay === "未付款") return "pay-unpaid";
+    if(pay === "已付訂金") return "pay-deposit";
+    if(pay === "已付清") return "pay-paid";
+    return "";
+  }
+
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeAttr(s){ return escapeHtml(s).replaceAll("`","&#096;"); }
+  // === 月收入 ===
+function moneyToNum(x){
+  // 允許 "1500" / "1,500" / "1500元" 等
+  const s = String(x ?? "").replace(/[^\d]/g, "");
+  return Number(s) || 0;
+}
+
+function updateMonthIncome(){
+  const box = document.getElementById("monthIncome");
+  if(!box) return;
+
+  const rows = data.filter(r => {
+    const m = r.month || inferMonthFromRow(r);
+    return m === activeMonth;
+  });
+
+  let received = 0; // 已收（已付清）
+  let pending  = 0; // 待收（未付款 + 已付訂金）
+  let deposit  = 0; // 訂金（已付訂金）
+
+  rows.forEach(r=>{
+    const price = moneyToNum(r.price);
+    if(r.pay === "已付清"){
+      received += price;
+    }else if(r.pay === "已付訂金"){
+      deposit += price;
+      pending += price;
+    }else{ // 未付款 或空白
+      pending += price;
+    }
+  });
+
+  box.innerHTML =
+    `📘 本月已收：${received.toLocaleString()} 元　` +
+    `🧾 待收：${pending.toLocaleString()} 元　` +
+    `💠 訂金：${deposit.toLocaleString()} 元`;
+}
+ 
+// === 表格內可編輯欄位 ===
+  function updatePay(i, value){
+    data[i].pay = value;
+    saveData();
+    render();
+  }
+  function updateStart(i, v){
+    data[i].start = v || "";
+    // 月份依開工日分類：開工日變動時同步更新月份
+    data[i].month = inferMonthFromRow(data[i]);
+    saveData();
+    safeRender();
+  }
+
+  function updateDDL(i, v){
+    data[i].ddl = v || "";
+    saveData();
+    safeRender();
+  }
+
+function pad2(n){ return String(n).padStart(2,"0"); }
+
+function currentMonthStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+}
+
+
+// 舊資料沒有 month 時：用 ddl 或 start 推月份；都沒有就丟到「未分類」
+function inferMonthFromRow(r){
+  const s = (r.start || "").trim(); // ← 只看開工日
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(0,7);
+  return "未分類";
+}
+
+
+function ensureMonthField(){
+  let changed = false;
+  data.forEach(r=>{
+    if(!r.month){
+      r.month = inferMonthFromRow(r);
+      changed = true;
+    }
+  });
+  if(changed) saveData();
+}
+
+function getAllMonths(){
+  const set = new Set();
+  data.forEach(r=>{
+    if(r.month) set.add(r.month);
+    else set.add(inferMonthFromRow(r));
+  });
+  // 排序：未分類放最後；其餘照時間新到舊或舊到新你可改
+  const arr = Array.from(set);
+  arr.sort((a,b)=>{
+    if(a==="未分類") return 1;
+    if(b==="未分類") return -1;
+    return a.localeCompare(b); // 依字串可得到 yyyy-mm 升冪
+  });
+  return arr;
+}
+
+function loadActiveMonth(){
+  const saved = localStorage.getItem(KEY_ACTIVE_MONTH);
+  if(saved) return saved;
+  return currentMonthStr();
+}
+function setActiveMonth(m){
+  activeMonth = m;
+  localStorage.setItem(KEY_ACTIVE_MONTH, m);
+  render();
+  updateMonthIncome();   // ✅ 切換當下立刻算一次（不靠刷新）
+}
+
+function renderMonthTabs(){
+  const wrap = document.getElementById("monthTabs");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+
+  const months = getAllMonths();
+  if(!months.includes(activeMonth)) {
+    // 如果目前頁籤不存在（例如第一次開），就跳到第一個月或當月
+    activeMonth = months.includes(currentMonthStr()) ? currentMonthStr() : (months[0] || currentMonthStr());
+    localStorage.setItem(KEY_ACTIVE_MONTH, activeMonth);
+updateMonthIncome();
+
+  }
+
+  months.forEach(m=>{
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "month-tab" + (m===activeMonth ? " active" : "");
+    btn.textContent = m;
+    btn.onclick = ()=> setActiveMonth(m);
+    wrap.appendChild(btn);
+  });
+}
+
+// 表單月份選單 1~12（顯示成 yyyy-mm）
+function initMonthSelect(){
+  const sel = document.getElementById("month");
+  if(!sel) return;
+
+  sel.innerHTML = "";
+  const now = new Date();
+  const y = now.getFullYear();
+
+  // 做「今年 1~12」；如果你想跨年也可以再擴充
+  for(let m=1;m<=12;m++){
+    const v = `${y}-${pad2(m)}`;
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  }
+
+  // 預設：跟著目前 activeMonth（若是未分類就改用當月）
+  sel.value = (activeMonth && activeMonth!=="未分類") ? activeMonth : currentMonthStr();
+}
+
+  function updatePrice(i, value){
+    data[i].price = (value || "").trim();
+    saveData();
+  }
+  function updateDeposit(i, value){
+    data[i].deposit = (value || "").trim();
+    saveData();
+  }
+  function updateNote(i, value){
+    data[i].note = (value || "").trim();
+    saveData();
+  }
+function editContact(i){
+  const old = data[i].contactUrl || "";
+  const val = prompt("修改聯絡資訊：", old);
+  if(val === null) return; // 取消
+  data[i].contactUrl = val.trim();
+  saveData();
+  safeRender();
+}
+  function editDataUrl(i){
+    const current = data[i].dataUrl || "";
+    const next = prompt("修改委託資料網址：", current);
+    if(next === null) return;
+    updateDataUrl(i, next);
+  }
+  function updateDataUrl(i, value){
+    data[i].dataUrl = (value || "").trim();
+    saveData();
+    render();
+  }
+
+  // === 排序 / 手動順序 ===
+  function toggleSortMode(){
+    sortMode = (sortMode === "ddl") ? "manual" : "ddl";
+    saveSortMode();
+    render();
+  }
+
+  function getRenderOrder(){
+    const notDone = [];
+    const done = [];
+    data.forEach((r, idx) => (r.done ? done : notDone).push(idx));
+
+    if(sortMode === "ddl"){
+      notDone.sort((ia, ib)=>{
+        const a = data[ia], b = data[ib];
+        const da = daysLeft(a.ddl);
+        const db = daysLeft(b.ddl);
+        if(da === null && db !== null) return 1;
+        if(da !== null && db === null) return -1;
+        if(da === null && db === null) return 0;
+        return da - db;
+      });
+    }
+    return notDone.concat(done);
+  }
+
+  function moveRow(indexInData, dir){
+    if(sortMode !== "manual") return;
+
+    const isDone = data[indexInData].done;
+    const group = data.map((x, idx)=>({x, idx}))
+      .filter(o => o.x.done === isDone)
+      .map(o => o.idx);
+
+    const pos = group.indexOf(indexInData);
+    const nextPos = pos + dir;
+    if(nextPos < 0 || nextPos >= group.length) return;
+
+    const swapWith = group[nextPos];
+    const tmp = data[indexInData];
+    data[indexInData] = data[swapWith];
+    data[swapWith] = tmp;
+
+    saveData();
+    render();
+  }
+
+  // === CRUD ===
+  function addRow(){
+    const name = document.getElementById("name").value.trim();
+    const contactType = document.getElementById("contactType").value;
+    const contactUrl = document.getElementById("contactUrl").value.trim();
+    const item = document.getElementById("item").value.trim();
+    const dataUrl = document.getElementById("dataUrl").value.trim();
+    const start = document.getElementById("start").value;
+    const ddl = document.getElementById("ddl").value;
+    const deposit = document.getElementById("deposit").value.trim();
+    const price = document.getElementById("price").value.trim();
+    const pay = document.getElementById("pay").value;
+    const note = (document.getElementById("note")?.value || "").trim();
+    const month = document.getElementById("month").value;
+
+
+    if(!name){
+      alert("請填寫委託人暱稱～");
+      return;
+    }
+
+    data.push({
+      name, contactType, contactUrl, item, dataUrl, start, ddl,
+      deposit, price, pay, note,
+      month,
+      draft:false, 
+      done:false
+    });
+
+    saveData();
+    render();
+  }
+
+  function clearInputs(){
+    ["name","contactUrl","item","dataUrl","start","ddl","deposit","price","note"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.value = "";
+    });
+    document.getElementById("contactType").value = "Facebook";
+    document.getElementById("pay").value = "未付款";
+  }
+
+  function toggleDone(i){
+    data[i].done = !data[i].done;
+    saveData();
+    render();
+  }
+
+  function removeRow(i){
+    if(!confirm("確定要刪除這筆委託嗎？")) return;
+    data.splice(i, 1);
+    saveData();
+    render();
+  }
+
+  // === Render ===
+  function render(){
+    const tbody = document.getElementById("list");
+    tbody.innerHTML = "";
+ensureMonthField();
+renderMonthTabs();
+initMonthSelect();
+renderBackupStatus();
+
+    const order = getRenderOrder().filter(i => (data[i].month || inferMonthFromRow(data[i])) === activeMonth);
+
+    const tableWrap = document.getElementById("tableWrap") || document.querySelector("table")?.parentElement;
+    const cardWrap = document.getElementById("cardList");
+
+if(viewMode === "card"){
+  // 隱藏表格、顯示卡片
+  if(tableWrap) tableWrap.style.display = "none";
+  if(cardWrap) cardWrap.style.display = "";
+  renderCards(order);
+  return; // 不跑原本表格 render
+}else{
+  if(tableWrap) tableWrap.style.display = "";
+  if(cardWrap) cardWrap.style.display = "none";
+}
+
+    order.forEach((i)=>{
+      const r = data[i];
+      const tr = document.createElement("tr");
+
+      if(!r.done){
+        const d = daysLeft(r.ddl);
+        if(d !== null){
+          if(d <= 3) tr.classList.add("urgent");
+          else if(d <= 7) tr.classList.add("warning");
+        }
+      }
+      if(r.done) tr.classList.add("done");
+
+      const dleft = daysLeft(r.ddl);
+      const dText = r.done ? "X" : ((dleft === null) ? "—" : `${dleft} 天`);
+
+      tr.innerHTML = `
+         <td class="col-narrow-center">
+          <div style="display:flex; gap:6px; justify-content:center;">
+            <button class="btn-order" type="button" onclick="moveRow(${i}, -1)" title="上移">▲</button>
+            <button class="btn-order" type="button" onclick="moveRow(${i}, 1)" title="下移">▼</button>
+          </div>
+        </td>
+
+        <td>${escapeHtml(r.name)}</td>
+
+      <td class="col-contact">
+        <div class="linkrow linkrow-contact">
+          ${r.contactUrl
+            ? `<a href="${escapeAttr(r.contactUrl)}" target="_blank">${escapeHtml(r.contactType)}</a>`
+      : `<span>${escapeHtml(r.contactType)}</span>`
+          }
+          <button class="btn-edit contact-edit" type="button" onclick="editContact(${i})" title="修改聯絡">✎</button>
+  </div>
+</td>
+
+
+
+
+        <td>${escapeHtml(r.item)}</td>
+
+        <td class="td-wide col-data">
+          <div class="linkrow">
+            ${r.dataUrl ? `<a href="${escapeAttr(r.dataUrl)}" target="_blank">開啟資料</a>` : `<span style="color:#aaa">未填</span>`}
+            <button class="btn-edit contact-edit" onclick="editDataUrl(${i})">✎</button>
+          </div>
+        </td>
+
+<td>
+  <input class="tbl-input" type="date" value="${escapeAttr(r.start)}"
+         onchange="updateStart(${i}, this.value)">
+</td>
+<td>
+  <input class="tbl-input" type="date" value="${escapeAttr(r.ddl)}"
+         onchange="updateDDL(${i}, this.value)">
+</td>
+        <td class="col-days"><span class="pill">${dText}</span></td>
+
+        <td><input class="tbl-input" value="${escapeAttr(r.deposit)}" placeholder=""
+                   onchange="updateDeposit(${i}, this.value)"></td>
+
+        <td><input class="tbl-input" value="${escapeAttr(r.price)}" placeholder="價格"
+                   onchange="updatePrice(${i}, this.value)"></td>
+
+        <td class="col-pay">
+           <select class="${payClass(r.pay)}"
+          onchange="updatePay(${i}, this.value)">
+    ${payOptions(r.pay)}
+  </select>
+        </td>
+
+        <td><input class="tbl-note" value="${escapeAttr(r.note)}" placeholder="備註"
+                   onchange="updateNote(${i}, this.value)"></td>
+
+        <td class="col-narrow-center">
+           <input type="checkbox" ${r.draft ? "checked":""} onchange="toggleDraft(${i})">
+        </td>
+
+        <td class="col-narrow-center">
+          <input type="checkbox" ${r.done ? "checked":""} onchange="toggleDone(${i})">
+        </td>
+
+        <td class="col-narrow-center">
+          <button class="btn-icon" type="button" onclick="removeRow(${i})">刪除</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const badge = document.getElementById("sortModeBadge");
+    if(badge) badge.textContent = (sortMode === "ddl") ? "依 DDL 自動排序" : "手動排序";
+  }
+activeMonth = loadActiveMonth();
+updateMonthIncome();
+function renderCards(order){
+  const wrap = document.getElementById("cardList");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+
+  order.forEach((i)=>{
+    const r = data[i];
+    const dleft = daysLeft(r.ddl);
+    const dText = r.done ? "X" : ((dleft === null) ? "—" : `${dleft} 天`);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    // 套用你原本的 urgent/warning/done 規則 :contentReference[oaicite:5]{index=5}
+    if(!r.done){
+      const d = daysLeft(r.ddl);
+      if(d !== null){
+        if(d <= 3) card.classList.add("urgent");
+        else if(d <= 7) card.classList.add("warning");
+      }
+    }
+    if(r.done) card.classList.add("done");
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-name">${escapeHtml(r.name)}</div>
+        <div class="card-pill">${escapeHtml(r.pay || "未付款")}｜${escapeHtml(dText)}</div>
+      </div>
+
+      <div class="card-row"><b>項目</b>：${escapeHtml(r.item || "—")}</div>
+      <div class="card-row"><b>開工</b>：${escapeHtml(r.start || "—")}　<b>DDL</b>：${escapeHtml(r.ddl || "—")}</div>
+      <div class="card-row"><b>訂金</b>：${escapeHtml(r.deposit || "—")}　<b>價格</b>：${escapeHtml(r.price || "—")}</div>
+      <div class="card-row"><b>備註</b>：${escapeHtml(r.note || "—")}</div>
+
+      <div class="card-row" style="margin-top:10px; gap:10px;">
+        <label style="display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" ${r.draft ? "checked":""} onchange="toggleDraft(${i})">草稿
+        </label>
+        <label style="display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" ${r.done ? "checked":""} onchange="toggleDone(${i})">完成
+        </label>
+        <button class="btn-icon" type="button" onclick="removeRow(${i})">刪除</button>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+function toggleDraft(i){
+  data[i].draft = !data[i].draft;
+  saveData();
+  safeRender?.() || render();
+}
+
+function safeRender(){
+  try{
+    render();
+    updateMonthIncome?.();
+  }catch(e){
+    console.error(e);
+    const box = document.getElementById("monthIncome");
+    if(box) box.innerHTML = `⚠️ 程式錯誤：${String(e).slice(0,120)}`;
+    alert("委託清單程式有錯誤（資料還在），請開 F12 → Console 看錯誤訊息。");
+  }
+}
+  safeRender();
+
+</script>
+
+</body>
+</html>
