@@ -665,14 +665,21 @@ td.col-contact{
     </label>
 
     <label>聯絡方式
-      <select id="contactType">
+      <select id="contactType" onchange="toggleContactCustom()">
         <option>Facebook</option>
         <option>Plurk</option>
+        <option>Threads</option>
+        <option>Discord</option>
+        <option value="自訂">自訂</option>
       </select>
     </label>
 
-    <label>聯絡方式網址
-      <input id="contactUrl" placeholder="https://...">
+    <label id="contactCustomLabel" style="display:none;">自訂聯絡方式
+      <input id="contactCustom" placeholder="例如：X / IG / E-mail">
+    </label>
+
+    <label>聯絡方式網址 / ID
+      <input id="contactUrl" placeholder="網址、帳號、ID 都可以">
     </label>
 
     <label>委託項目
@@ -778,6 +785,7 @@ td.col-contact{
 <div id="cardList" class="card-list" style="display:none;"></div>
 <div id="monthIncome" class="month-income"></div>
 <div id="backupStatus" class="backup-status"></div>
+<input id="importJsonInput" type="file" accept="application/json,.json" style="display:none" onchange="importJsonFile(this.files && this.files[0])">
 <div class="view-switch">
   <button type="button" class="view-btn" onclick="setViewMode('table')">表格</button>
   <button type="button" class="view-btn" onclick="setViewMode('card')">卡片</button>
@@ -861,8 +869,12 @@ function renderBackupStatus(){
   const el = document.getElementById("backupStatus");
   if(!el) return;
   const ts = localStorage.getItem(BACKUP_TS_KEY);
-  el.innerHTML = `💾 自動備份：${ts ? ts : "尚未備份"}<button type="button" class="backup-restore-btn" onclick="restoreFromBackup()">還原備份</button>`;
-
+  el.innerHTML = `
+    💾 自動備份：${ts ? ts : "尚未備份"}
+    <button type="button" onclick="exportJson()">匯出 JSON</button>
+    <button type="button" onclick="document.getElementById('importJsonInput').click()">讀取 JSON</button>
+    <button type="button" class="backup-restore-btn" onclick="restoreFromBackup()">還原瀏覽器備份</button>
+  `;
 }
 
 function restoreFromBackup(){
@@ -878,6 +890,77 @@ function restoreFromBackup(){
     console.error(e);
     alert("備份格式錯誤，無法還原。");
   }
+}
+
+function downloadTextFile(filename, text){
+  const blob = new Blob([text], {type:"application/json;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportJson(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  const stamp = `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+  const payload = {
+    app: "阿梅委託管理清單",
+    version: 1,
+    exportedAt: d.toISOString(),
+    data: data
+  };
+  downloadTextFile(`ame_commissions_backup_${stamp}.json`, JSON.stringify(payload, null, 2));
+}
+
+function normalizeImportedData(payload){
+  const arr = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.data) ? payload.data : null);
+  if(!arr) throw new Error("JSON 裡沒有可讀取的委託清單資料。");
+
+  return arr.map(x => ({
+    name: x.name ?? "",
+    contactType: x.contactType ?? "Facebook",
+    contactUrl: x.contactUrl ?? "",
+    item: x.item ?? "",
+    dataUrl: x.dataUrl ?? "",
+    start: x.start ?? "",
+    ddl: x.ddl ?? "",
+    deposit: x.deposit ?? "",
+    price: x.price ?? "",
+    pay: x.pay ?? "未付款",
+    note: x.note ?? "",
+    done: !!x.done,
+    month: x.month ?? "",
+    draft: !!x.draft
+  }));
+}
+
+function importJsonFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const payload = JSON.parse(reader.result);
+      const imported = normalizeImportedData(payload);
+      if(!confirm(`讀到 ${imported.length} 筆委託。要用這份 JSON 取代目前網站內的清單嗎？\n\n建議：匯入前可先按「匯出 JSON」備份目前資料。`)) return;
+      data = imported;
+      saveData();
+      activeMonth = loadActiveMonth();
+      safeRender();
+      alert("JSON 已讀取完成 ✅");
+    }catch(e){
+      console.error(e);
+      alert("讀取失敗：這個 JSON 格式不符合委託清單資料。");
+    }finally{
+      const input = document.getElementById("importJsonInput");
+      if(input) input.value = "";
+    }
+  };
+  reader.readAsText(file, "utf-8");
 }
 
   function daysLeft(ddl){
@@ -1148,10 +1231,20 @@ function editContact(i){
     render();
   }
 
+  function toggleContactCustom(){
+    const sel = document.getElementById("contactType");
+    const box = document.getElementById("contactCustomLabel");
+    if(!sel || !box) return;
+    box.style.display = (sel.value === "自訂") ? "" : "none";
+  }
+
   // === CRUD ===
   function addRow(){
     const name = document.getElementById("name").value.trim();
-    const contactType = document.getElementById("contactType").value;
+    let contactType = document.getElementById("contactType").value;
+    if(contactType === "自訂"){
+      contactType = (document.getElementById("contactCustom").value || "").trim() || "自訂";
+    }
     const contactUrl = document.getElementById("contactUrl").value.trim();
     const item = document.getElementById("item").value.trim();
     const dataUrl = document.getElementById("dataUrl").value.trim();
@@ -1182,11 +1275,12 @@ function editContact(i){
   }
 
   function clearInputs(){
-    ["name","contactUrl","item","dataUrl","start","ddl","deposit","price","note"].forEach(id=>{
+    ["name","contactCustom","contactUrl","item","dataUrl","start","ddl","deposit","price","note"].forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.value = "";
     });
     document.getElementById("contactType").value = "Facebook";
+    toggleContactCustom();
     document.getElementById("pay").value = "未付款";
   }
 
@@ -1387,6 +1481,7 @@ function safeRender(){
     alert("委託清單程式有錯誤（資料還在），請開 F12 → Console 看錯誤訊息。");
   }
 }
+  toggleContactCustom();
   safeRender();
 
 </script>
