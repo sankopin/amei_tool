@@ -6,652 +6,512 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root{
-    --bg:#f6f7f7;
-    --panel:#fff;
-    --border:#e7eaec;
-    --text:#222;
-    --muted:#666;
-    --accent:#2fb36a;
-    --accent2:#e9f8f0;
-
-    /* ⭐ 你要改「間距」主要改這三個： */
-    --form-gap: 12px;   /* 上方輸入區每格距離 */
-    --cell-pad: 10px;   /* 表格每格內距（越大越鬆） */
-    --row-gap: 0px;     /* 表格列與列之間（一般用不到） */
+    --bg:#f3f4f6;
+    --panel:#ffffff;
+    --border:#e5e7eb;
+    --text:rgba(0,0,0,.78);
+    --muted:rgba(0,0,0,.48);
+    --accent:rgb(110,180,135);
+    --accentSoft:rgba(110,180,135,.12);
+    --purple:rgb(167,142,220);
+    --purpleSoft:rgba(167,142,220,.16);
+    --danger:rgb(164,43,57);
+    --warning:rgb(231,179,34);
+    --shadow-sm:0 10px 28px rgba(0,0,0,.08);
+    --radius:16px;
+    --form-gap:12px;
+    --cell-pad:8px;
   }
-/* === 表格欄寬（讓幾個欄位不要撐太寬） === */
-th.col-contact, td.col-contact{ width: 120px; }
-th.col-data, td.col-data{ width: 120px; }
-th.col-days, td.col-days{ width: 92px; text-align:center; }
-th.col-pay, td.col-pay{ width: 150px; }
-td.col-pay select{ width: 120px; }
 
-.td-wide{
-  width: 150px;
-  min-width: 150px;
-  white-space: normal;
-}
+  *{ box-sizing:border-box; }
 
-th.col-contact, td.col-contact{ width: 120px; }
-th.col-days, td.col-days{ width: 80px; text-align:center; }
-th.col-pay, td.col-pay{ width: 130px; }
   body{
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background:var(--bg);
     margin:0;
     padding:24px;
+    background:var(--bg);
     color:var(--text);
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
   }
-  h1{ margin:0 0 16px; font-size:20px; }
+
+  h1{
+    margin:0 0 16px;
+    font-size:20px;
+    font-weight:950;
+    letter-spacing:.2px;
+  }
+
+  a{
+    color:var(--accent);
+    text-decoration:none;
+    font-weight:800;
+  }
 
   .card{
     background:var(--panel);
-    border-radius:16px;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
     padding:16px;
-    box-shadow:0 8px 24px rgba(0,0,0,.06);
     margin-bottom:20px;
-    border: 1px solid var(--border);
+  }
+
+  /* ===== Form groups ===== */
+  .form-groups{
+    display:grid;
+    gap:12px;
+  }
+
+  .form-group{
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px;
+    background:rgba(255,255,255,.72);
+  }
+
+  .form-group legend{
+    padding:0 6px;
+    color:rgba(0,0,0,.62);
+    font-size:12px;
+    font-weight:950;
   }
 
   .form{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-    gap: var(--form-gap);
+    gap:var(--form-gap);
   }
+
   .form label{
-    font-size:12px;
-    color:#555;
     display:flex;
     flex-direction:column;
     gap:6px;
+    color:rgba(0,0,0,.58);
+    font-size:12px;
+    font-weight:800;
   }
+
   input, select{
+    width:100%;
     padding:9px 10px;
-    border-radius:10px;
     border:1px solid #ddd;
-    font-size:13px;
+    border-radius:10px;
     background:#fff;
+    color:var(--text);
+    font-size:13px;
   }
+
   input:focus, select:focus{
     outline:none;
-    border-color: rgba(47,179,106,.55);
-    box-shadow: 0 0 0 4px rgba(47,179,106,.14);
+    border-color:rgba(110,180,135,.55);
+    box-shadow:0 0 0 4px rgba(110,180,135,.14);
   }
 
   .row-actions{
     display:flex;
+    flex-wrap:wrap;
     gap:10px;
     align-items:center;
-    margin-top: 12px;
-    flex-wrap: wrap;
+    margin-top:12px;
   }
 
   button{
-    padding:10px 14px;
-    border-radius:999px;
     border:none;
+    border-radius:999px;
+    padding:10px 14px;
     background:var(--accent);
     color:#fff;
-    font-weight:800;
+    font-weight:900;
     cursor:pointer;
+    transition:background .15s ease, transform .08s ease, border-color .15s ease;
   }
-  button.secondary{
-    background:#fff;
-    color:#333;
+
+  button:hover{ transform:translateY(-1px); }
+
+  button.secondary,
+  .btn-icon,
+  .btn-mini,
+  .contact-edit,
+  .backup-status button{
     border:1px solid var(--border);
-  }
-  button.danger{
     background:#fff;
-    color:#b42318;
-    border:1px solid rgba(180,35,24,.25);
+    color:rgba(0,0,0,.72);
   }
 
   .hint{
+    color:var(--muted);
     font-size:12px;
-    color:rgba(0,0,0,.55);
+  }
+
+  /* ===== Month / backup controls ===== */
+  .month-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:0 0 12px;
+  }
+
+  .month-tab{
+    border:1px solid var(--border);
+    background:#fff;
+    color:rgba(0,0,0,.70);
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:900;
+  }
+
+  .month-tab:hover{ background:#f7f7f7; }
+
+  .month-tab.active{
+    border-color:rgba(110,180,135,.55);
+    background:var(--accentSoft);
+  }
+
+  .month-income,
+  .backup-status{
+    display:inline-flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin:10px 8px 14px 0;
+    padding:9px 12px;
+    border-radius:12px;
+    font-size:12px;
+    font-weight:900;
+  }
+
+  .month-income{
+    background:var(--accentSoft);
+    border:1px solid rgba(110,180,135,.30);
+    color:rgba(0,0,0,.75);
+  }
+
+  .backup-status{
+    background:var(--purpleSoft);
+    border:1px solid rgba(167,142,220,.28);
+    color:rgba(0,0,0,.70);
+  }
+
+  .backup-status button{
+    padding:4px 8px;
+    border-radius:10px;
+    font-size:12px;
+  }
+
+  .backup-status button:hover{ background:#f7f7f7; }
+
+  .backup-restore-btn{
+    background:rgba(164,43,57,.12) !important;
+    border-color:rgba(164,43,57,.35) !important;
+    color:var(--danger) !important;
+  }
+
+  /* ===== Table ===== */
+  .table-wrap{
+    overflow:auto;
+    border:1px solid var(--border);
+    border-radius:14px;
   }
 
   table{
     width:100%;
+    table-layout:fixed;
     border-collapse:separate;
-    border-spacing: 0 var(--row-gap);
-    font-size:13px;
+    border-spacing:0;
+    font-size:12px;
   }
+
   th, td{
-    padding: var(--cell-pad);
+    padding:var(--cell-pad);
     border-bottom:1px solid #eee;
     text-align:left;
     vertical-align:middle;
-    white-space: nowrap;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
+
   th{
-    background:#fafafa;
     position:sticky;
     top:0;
     z-index:1;
+    background:#fafafa;
+    color:rgba(0,0,0,.66);
+    font-weight:950;
   }
 
+  td.td-wide, th.td-wide{ white-space:normal; }
+  .col-narrow-center, td.col-narrow-center{ text-align:center; }
+  .col-days{ text-align:center; }
+  td.col-pay{ overflow:hidden; }
+
+  #list tr:hover{ background:var(--purpleSoft) !important; }
+
+  tr.urgent{ background:rgba(220,38,38,.06); }
+  tr.warning{ background:rgba(234,179,8,.08); }
   tr.done{
     color:#aaa;
     background:#fcfcfc;
   }
 
-  a{ color:var(--accent); text-decoration:none; }
-
   .pill{
     display:inline-flex;
     align-items:center;
     gap:6px;
-    padding:4px 10px;
+    padding:4px 8px;
+    border:1px solid rgba(110,180,135,.18);
     border-radius:999px;
-    font-size:12px;
-    background:var(--accent2);
+    background:var(--accentSoft);
     color:#1f6b41;
-    font-weight:800;
-    border: 1px solid rgba(47,179,106,.18);
+    font-size:11px;
+    font-weight:900;
   }
 
-  .mini{
-    width: auto;
-    min-width: 0;
-    max-width: 220px;
+  .tbl-input{
+    width:50px;
+    max-width:50px;
+    padding:6px 8px;
+    font-size:12px;
   }
+
+  input[type="date"].tbl-input{
+    width:100px !important;
+    max-width:100px !important;
+  }
+
+  .tbl-note{
+    width:125px;
+    max-width:125px;
+    padding:6px 8px;
+    font-size:12px;
+  }
+
   .linkrow{
     display:flex;
     align-items:center;
     gap:6px;
     flex-wrap:wrap;
   }
-  .btn-mini{
-    border-radius: 6px;
-    padding: 3px 6px;
-    font-size: 12px;
-    font-weight: 900;
-    background:#fff;
-    border:1px solid var(--border);
-    cursor:pointer;
+
+  .linkrow-contact{
+    display:flex;
+    align-items:center;
+    flex-wrap:nowrap !important;
+    gap:6px;
   }
-  .btn-mini:hover{ background:#fafafa; }
+
+  .linkrow-contact a,
+  .linkrow-contact span{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .linkrow-contact button{ flex:0 0 auto; }
+
+  .contact-edit{
+    border-radius:6px;
+    padding:2px 6px;
+    color:var(--purple) !important;
+    font-size:12px;
+  }
+
+  .contact-edit:hover{
+    background:var(--purpleSoft);
+    border-color:rgba(167,142,220,.45);
+  }
 
   .btn-icon{
-    border-radius: 12px;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-weight: 900;
-    background:#fff;
-    border:1px solid var(--border);
-    cursor:pointer;
+    border-radius:12px;
+    padding:8px 10px;
+    font-size:12px;
   }
+
   .btn-icon:hover{ background:#fafafa; }
 
-  .table-wrap{
-    overflow:auto;
-    border-radius: 14px;
+  .btn-order{
+    width:28px;
+    height:28px;
+    padding:0;
+    border:1px solid rgba(167,142,220,.45);
+    border-radius:50%;
+    background:#fff !important;
+    color:var(--purple) !important;
+    line-height:26px;
+    text-align:center;
+    font-size:11px;
   }
-tr.urgent{
-  background: rgba(220,38,38,.06); /* 紅 */
-}
-tr.warning{
-  background: rgba(234,179,8,.08); /* 橘 */
-}
 
-
-  /* === Notion-ish table feel === */
-
-  .col-narrow-center{ text-align:center; }
-  td.col-narrow-center{ text-align:center; }
-
-  .table-wrap{
-    border: 1px solid var(--border);
-    border-radius: 14px;
+  .btn-order:hover{
+    background:var(--purpleSoft) !important;
+    border-color:rgba(167,142,220,.65);
   }
-  table{
-    table-layout: fixed;          /* key: avoid weird auto stretching */
+
+  .col-pay select{
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box;
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    padding:4px 22px 4px 8px;
+    border:1px solid transparent;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+    background-repeat:no-repeat;
+    background-image:
+      linear-gradient(45deg, transparent 50%, rgba(0,0,0,.45) 50%),
+      linear-gradient(135deg, rgba(0,0,0,.45) 50%, transparent 50%);
+    background-position:right 12px center, right 7px center;
+    background-size:6px 6px, 6px 6px;
   }
-  th, td{
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;      /* show ... when too long */
+
+  .pay-unpaid{
+    background-color:rgba(220,38,38,.12);
+    border-color:rgba(220,38,38,.25);
+    color:rgb(153,27,27);
   }
-  td.td-wide, th.td-wide{
-    white-space: normal;          /* allow wrap for the "資料" column if needed */
+
+  .pay-deposit{
+    background-color:rgba(37,99,235,.12);
+    border-color:rgba(37,99,235,.25);
+    color:rgb(29,78,216);
   }
-/* 表格內可編輯數字（價格/訂金） */
-.tbl-input{
-  width: 50px;
-  max-width: 50px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 13px;
-}
-/* 付款狀態顏色 */
-.paypill{
-  display:inline-flex;
-  align-items:center;
-  padding:6px 10px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:900;
-  border:1px solid transparent;
-  white-space:nowrap;
-}
-.pay-unpaid{
-  background: rgba(220,38,38,.12);
-  border-color: rgba(220,38,38,.25);
-  color: rgb(153,27,27);
-}
-.pay-deposit{
-  background: rgba(37,99,235,.12);
-  border-color: rgba(37,99,235,.25);
-  color: rgb(29,78,216);
-}
-.pay-paid{
-  background: rgba(22,163,74,.12);
-  border-color: rgba(22,163,74,.25);
-  color: rgb(21,128,61);
-}
-/* 表格在 iframe 內縮小一點 */
-table th,
-table td{
-  padding: 8px 8px;   /* 原本大概 12~16，這裡縮 */
-  font-size: 12px;
-}
-.pill{
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 999px;
-}
-.tbl-input{
-  width: 50px;
-  max-width: 50px;
-  padding: 6px 8px;
-  font-size: 12px;
-}
 
-.tbl-note{
-  width: 125px;
-  max-width: 125px;
-  padding: 6px 8px;
-  font-size: 12px;
-}
-.paypill{
-  padding: 4px 8px;
-  font-size: 11px;
-}
+  .pay-paid{
+    background-color:rgba(22,163,74,.12);
+    border-color:rgba(22,163,74,.25);
+    color:rgb(21,128,61);
+  }
 
-.col-pay select{
-  padding: 6px 8px;
-  font-size: 12px;
-}
-.btn-order{
-  padding: 4px 6px;
-  font-size: 11px;
-  border-radius: 8px;
-}
-/* 付款狀態：讓 select 本身像彩色按鈕（單一元件，不會兩排） */
-.col-pay select{
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+  tr.done .pill,
+  tr.done .col-pay select,
+  tr.done .col-pay select.pay-unpaid,
+  tr.done .col-pay select.pay-deposit,
+  tr.done .col-pay select.pay-paid{
+    background-color:#f2f3f4 !important;
+    border-color:#dedfe2 !important;
+    color:#9aa0a6 !important;
+  }
 
-  padding: 6px 28px 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 900;
-  border: 1px solid transparent;
-  cursor: pointer;
-  line-height: 1;
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 10px 10px;
-  /* 小小下拉箭頭（純 CSS） */
-  background-image:
-    linear-gradient(45deg, transparent 50%, rgba(0,0,0,.45) 50%),
-    linear-gradient(135deg, rgba(0,0,0,.45) 50%, transparent 50%);
-  background-position:
-    right 12px center,
-    right 7px center;
-  background-size:
-    6px 6px,
-    6px 6px;
-}
+  tr.done button{
+    background:#f2f3f4 !important;
+    border-color:#dedfe2 !important;
+    color:#9aa0a6 !important;
+    box-shadow:none !important;
+  }
 
-/* 依狀態套色（我們會在 JS 幫 select 加 class） */
-.col-pay select.pay-unpaid{
-  background-color: rgba(220,38,38,.12);
-  border-color: rgba(220,38,38,.25);
-  color: rgb(153,27,27);
-}
-.col-pay select.pay-deposit{
-  background-color: rgba(37,99,235,.12);
-  border-color: rgba(37,99,235,.25);
-  color: rgb(29,78,216);
-}
-.col-pay select.pay-paid{
-  background-color: rgba(22,163,74,.12);
-  border-color: rgba(22,163,74,.25);
-  color: rgb(21,128,61);
-}
-/* === 完成列：整排醒目色全部變灰 === */
-tr.done{
-  color:#aaa;
-  background:#fcfcfc;
-}
+  tr.done a{ color:#9aa0a6 !important; }
 
-/* 倒數 pill 變灰 */
-tr.done .pill{
-  background: #f2f3f4;
-  border-color: #dedfe2;
-  color: #9aa0a6;
-}
+  tr.done input{
+    background:#fafafa;
+    border-color:#e6e6e6;
+    color:#9aa0a6;
+  }
 
-/* 付款狀態 select（原本有紅/藍/綠 class）全部覆蓋成灰 */
-tr.done .col-pay select,
-tr.done .col-pay select.pay-unpaid,
-tr.done .col-pay select.pay-deposit,
-tr.done .col-pay select.pay-paid{
-  background-color: #f2f3f4 !important;
-  border-color: #dedfe2 !important;
-  color: #9aa0a6 !important;
-}
+  /* ===== Card view ===== */
+  .card-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:12px;
+    margin-top:12px;
+  }
 
-/* 各種按鈕、修改、刪除、上下移 都變灰 */
-tr.done button{
-  background: #f2f3f4 !important;
-  border: 1px solid #dedfe2 !important;
-  color: #9aa0a6 !important;
-  box-shadow: none !important;
-}
+  #cardList .card{
+    margin-bottom:0;
+    padding:12px;
+    border-color:rgba(0,0,0,.08);
+    border-radius:14px;
+    background:rgba(255,255,255,.85);
+    box-shadow:0 8px 18px rgba(0,0,0,.06);
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+  }
 
-/* 連結也變灰（開啟資料/聯絡） */
-tr.done a{
-  color: #9aa0a6 !important;
-}
+  #cardList .card:hover{
+    background:rgba(255,255,255,.9);
+    border-color:rgba(167,142,220,.7);
+    box-shadow:0 12px 28px rgba(0,0,0,.12);
+    transform:translateY(-4px);
+  }
 
-/* input 框也變灰一點（訂金/價格/備註） */
-tr.done input{
-  background: #fafafa;
-  border-color: #e6e6e6;
-  color: #9aa0a6;
-}
-.month-tabs{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin: 10px 0 12px;
-}
-.month-tab{
-  border:1px solid #e5e7eb;
-  background:#fff;
-  padding:8px 12px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:900;
-  cursor:pointer;
-  color: rgba(0,0,0,.70);
-}
-.month-tab.active{
-  border-color: rgba(110,180,135,.55);
-  background: rgba(110,180,135,.10);
-}
-.month-tab:hover{
-  background:#f7f7f7;
-}
-.month-income{
-  margin: 10px 0 14px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: rgba(110,180,135,.10);
-  border: 1px solid rgba(110,180,135,.30);
-  font-weight: 900;
-  color: rgba(0,0,0,.75);
-  font-size: 14px;
-  display: inline-block;
-}
-/* 日期欄位要更寬，不然只顯示年月 */
-input[type="date"].tbl-input{
-  width: 100px !important;
-  max-width: 100px !important;
-}
-/* ✅ 付款狀態：跟著欄寬縮放，不要固定 120px */
-td.col-pay select{
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box;
-  padding: 4px 6px;      /* 想再小就改這裡 */
-  font-size: 12px;       /* 想再小就改這裡 */
-}
+  .card-top{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+  }
 
-/* ✅ 防止表格欄位內容撐爆 */
-td.col-pay{
-  overflow: hidden;
-}
-/* ✅ 備份 */
-.backup-status{
-  margin: 8px 0 14px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: rgba(167,142,220,.10);
-  border: 1px solid rgba(167,142,220,.28);
-  font-weight: 800;
-  color: rgba(0,0,0,.70);
-  font-size: 12px;
-  display: inline-flex;
-  gap: 10px;
-  align-items: center;
-}
-.backup-status button{
-  border: 1px solid rgba(0,0,0,.12);
-  background: #fff;
-  border-radius: 10px;
-  padding: 4px 8px;
-  font-weight: 900;
-  cursor: pointer;
-}
-.backup-status button:hover{ background:#f7f7f7; }
-.backup-restore-btn{
-  background: rgba(164,43,57,.12); /* 淺紅背景（可換）*/
-  border: 1px solid rgba(164,43,57,.35);
-  color: rgb(164,43,57);           /* 文字深紅 */
-  font-weight: 900;
-  border-radius: 8px;
-  padding: 3px 10px;
-  cursor: pointer;
-}
+  .card-name{
+    color:var(--purple);
+    font-size:18px;
+    font-weight:950;
+    letter-spacing:.5px;
+    text-shadow:0 1px 0 rgba(255,255,255,.6);
+  }
 
-.backup-restore-btn:hover{
-  background: rgba(164,43,57,.18);
-}
-/* 排序按鈕（白底＋紫色 icon） */
-.btn-order{
-  background: #fff !important;
-  border: 1px solid rgba(167,142,220,.45);
-  color: rgb(167,142,220) !important;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-weight: 900;
-  text-align: center;
-  line-height: 26px;
-  padding: 0;
-  cursor: pointer;
-  transition: 0.15s ease;
-}
+  .card-pill{
+    margin-left:auto;
+    padding:4px 10px;
+    border-radius:999px;
+    background:rgba(0,0,0,.06);
+    font-size:12px;
+    font-weight:900;
+  }
 
-.btn-order:hover{
-  background: rgba(167,142,220,.12) !important;
-}
+  .card-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    color:rgba(0,0,0,.72);
+    font-size:13px;
+  }
 
-/* hover 效果：淡淡紫底 */
-.btn-order:hover{
-  background: rgba(167,142,220,.12) !important;
-  border-color: rgba(167,142,220,.65);
-}
+  .card-row b{ color:rgba(0,0,0,.9); }
 
-.contact-edit{
-  background: #fff;
-  border: 1px solid rgba(0,0,0,.15);
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 12px;
-  cursor: pointer;
-}
+  #cardList .card.urgent{
+    border-color:rgba(164,43,57,.35);
+    background:rgba(164,43,57,.06);
+  }
 
-.contact-edit:hover{
-  background: rgba(167,142,220,.12);
-  border-color: rgba(167,142,220,.45);
-  color: rgb(167,142,220);
-}
+  #cardList .card.warning{
+    border-color:rgba(231,179,34,.35);
+    background:rgba(231,179,34,.08);
+  }
 
-.contact-text{
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* 聯絡欄專用：不要換行，避免行高被撐高 */
-.linkrow-contact{
-  flex-wrap: nowrap !important;
-}
+  #cardList .card.done{
+    opacity:.6;
+    filter:grayscale(.2);
+  }
 
-/* 連結太長就省略，不要把 ✎ 擠到下一行 */
-.linkrow-contact a,
-.linkrow-contact span{
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  .view-switch{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin:0 10px;
+  }
 
-/* 你的全域 button 可能是白字，這裡把 ✎ 文字改回可見 */
-.contact-edit{
-  background:#fff !important;
-  border:1px solid rgba(0,0,0,.15);
-  color: rgb(167,142,220) !important; /* 紫色 icon */
-}
-/* 讓 td 回到 table-cell，避免行高錯位 */
-td.col-contact{
-  display: table-cell !important;
-  vertical-align: middle;
-}
+  .view-btn{
+    border:1px solid rgba(0,0,0,.12);
+    border-radius:999px;
+    background:rgba(255,255,255,.8);
+    color:#222;
+    padding:5px 12px;
+    font-size:12px;
+    font-weight:900;
+  }
 
-/* 真正需要 flex 的放在內層 */
-.linkrow-contact{
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap !important;
-  gap: 6px;
-}
+  .view-btn:hover{
+    background:var(--purpleSoft);
+    border-color:rgba(167,142,220,.6);
+  }
 
-/* 文字太長就省略，不要擠高 */
-.linkrow-contact a,
-.linkrow-contact span{
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ✎ 按鈕永遠不要被壓縮 */
-.linkrow-contact button{
-  flex: 0 0 auto;
-}
-/* ✅ 滑過整列高亮：你就知道自己在哪一行 */
-#list tr:hover{
-  background: rgba(167,142,220,.16) !important;
-}
-.card-list{
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.card{
-  border: 1px solid rgba(0,0,0,.08);
-  border-radius: 14px;
-  background: rgba(255,255,255,.85);
-  box-shadow: 0 8px 18px rgba(0,0,0,.06);
-  padding: 12px;
-  transition: 
-      transform .18s ease,
-      box-shadow .18s ease,
-      background .18s ease;
-}
-
-.card-top{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom: 8px;
-}
-
-.card-name{
-  font-weight: 900;
-  font-size: 18px;
-  color: rgb(167,142,220); /* 你的紫色主色 */
-  letter-spacing: .5px;
-  text-shadow: 0 1px 0 rgba(255,255,255,.6);
-}
-
-.card-pill{
-  margin-left:auto;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 900;
-  background: rgba(0,0,0,.06);
-}
-
-.card-row{
-  display:flex;
-  gap:8px;
-  flex-wrap: wrap;
-  font-size: 13px;
-  color: rgba(0,0,0,.72);
-}
-/* 滑過高亮 */
-#cardList .card:hover{
-   background: rgba(255,255,255,.9); /* 幾乎不變色 */
-  border-color: rgba(167,142,220,.7);
-  box-shadow: 0 12px 28px rgba(0,0,0,.12);
-  transform: translateY(-4px);
-}
-.card-row b{ color: rgba(0,0,0,.9); }
-
-.card.urgent{ border-color: rgba(164,43,57,.35); background: rgba(164,43,57,.06); }
-.card.warning{ border-color: rgba(231,179,34,.35); background: rgba(231,179,34,.08); }
-.card.done{ opacity:.6; filter: grayscale(.2); }
-.view-switch{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  margin: 0 10px;
-}
-
-.view-btn{
-  color: #222;
-  border:1px solid rgba(0,0,0,.12);
-  background: rgba(255,255,255,.8);
-  padding:5px 12px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:800;
-  cursor:pointer;
-  transition:all .15s ease;
-}
-
-.view-btn:hover{
-  background: rgba(167,142,220,.18);
-  border-color: rgba(167,142,220,.6);
-}
-
-.view-btn.active{
-  background: rgba(167,142,220,.35);
-  border-color: rgba(167,142,220,.8);
-}
-
+  .view-btn.active{
+    background:rgba(167,142,220,.35);
+    border-color:rgba(167,142,220,.8);
+  }
 </style>
 </head>
 <body>
@@ -659,74 +519,88 @@ td.col-contact{
 <h1>阿梅委託管理清單</h1>
 
 <div class="card">
-  <div class="form">
-    <label>委託人暱稱
-      <input id="name" placeholder="例如：阿花/匿名A">
-    </label>
+  <div class="form-groups">
+    <fieldset class="form-group">
+      <legend>基本資料</legend>
+      <div class="form">
+        <label>委託人暱稱
+          <input id="name" placeholder="例如：阿花/匿名A">
+        </label>
 
-    <label>聯絡方式
-      <select id="contactType" onchange="toggleContactCustom()">
-        <option>Facebook</option>
-        <option>Plurk</option>
-        <option>Threads</option>
-        <option>Discord</option>
-        <option value="自訂">自訂</option>
-      </select>
-    </label>
+        <label>委託項目
+          <input id="item" list="itemOptions" placeholder="可選或自行輸入">
+          <datalist id="itemOptions">
+            <option value="大頭"></option>
+            <option value="半身"></option>
+            <option value="立繪"></option>
+            <option value="組合頁A"></option>
+            <option value="組合頁B"></option>
+            <option value="性轉組合頁"></option>
+            <option value="迷你Q"></option>
+          </datalist>
+        </label>
 
-    <label id="contactCustomLabel" style="display:none;">自訂聯絡方式
-      <input id="contactCustom" placeholder="例如：X / IG / E-mail">
-    </label>
+        <label>月份
+          <select id="month"></select>
+        </label>
+      </div>
+    </fieldset>
 
-    <label>聯絡方式網址 / ID
-      <input id="contactUrl" placeholder="網址、帳號、ID 都可以">
-    </label>
+    <fieldset class="form-group">
+      <legend>聯絡與資料</legend>
+      <div class="form">
+        <label>聯絡方式
+          <select id="contactType" onchange="toggleContactCustom()">
+            <option>Facebook</option>
+            <option>Plurk</option>
+            <option>Threads</option>
+            <option>Discord</option>
+            <option value="自訂">自訂</option>
+          </select>
+        </label>
 
-    <label>委託項目
-      <!-- ✅ 可輸入 + 有預設選項 -->
-      <input id="item" list="itemOptions" placeholder="可選或自行輸入">
-      <datalist id="itemOptions">
-        <option value="大頭"></option>
-        <option value="半身"></option>
-        <option value="立繪"></option>
-        <option value="組合頁A"></option>
-        <option value="組合頁B"></option>
-        <option value="性轉組合頁"></option>
-        <option value="迷你Q"></option>
-      </datalist>
-    </label>
+        <label id="contactCustomLabel" style="display:none;">自訂聯絡方式
+          <input id="contactCustom" placeholder="例如：X / IG / E-mail">
+        </label>
 
-    <label>委託資料（網址）
-      <input id="dataUrl" placeholder="https://...">
-    </label>
+        <label>聯絡方式網址 / ID
+          <input id="contactUrl" placeholder="網址、帳號、ID 都可以">
+        </label>
 
-    <label>月份
-      <select id="month"></select>
-    </label>
+        <label>委託資料（網址）
+          <input id="dataUrl" placeholder="https://...">
+        </label>
+      </div>
+    </fieldset>
 
-    <label>開工日（可不填）
-      <input type="date" id="start">
-    </label>
+    <fieldset class="form-group">
+      <legend>日期與金額</legend>
+      <div class="form">
+        <label>開工日（可不填）
+          <input type="date" id="start">
+        </label>
 
-    <label>DDL（建議必填）
-      <input type="date" id="ddl">
-    </label>
+        <label>DDL（建議必填）
+          <input type="date" id="ddl">
+        </label>
 
-    <label>訂金（可不填）
-      <input id="deposit" placeholder="例如：500">
-    </label>
+        <label>訂金（可不填）
+          <input id="deposit" placeholder="例如：500">
+        </label>
 
-    <label>價格
-      <input id="price" placeholder="例如：1500">
-    </label>
+        <label>價格
+          <input id="price" placeholder="例如：1500">
+        </label>
 
-    <label>付款狀態
-      <select id="pay">
-        <option>未付款</option>
-        <option>已付訂金</option>
-        <option>已付清</option>
-      </select>
-    </label>
+        <label>付款狀態
+          <select id="pay">
+            <option>未付款</option>
+            <option>已付訂金</option>
+            <option>已付清</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
   </div>
 
   <div class="row-actions">
@@ -740,7 +614,7 @@ td.col-contact{
 </div>
 
 <div class="card">
-  <div class="table-wrap">
+  <div id="tableWrap" class="table-wrap">
   <div id="monthTabs" class="month-tabs"></div>
     <table>
       <colgroup>
@@ -800,8 +674,17 @@ let viewMode = (localStorage.getItem(VIEWMODE_KEY) || "table");
   function setViewMode(m){
     viewMode = m;
     try{ localStorage.setItem(VIEWMODE_KEY, m); }catch(e){}
-    render();
-}
+    safeRender();
+  }
+
+  function updateViewButtons(){
+    document.querySelectorAll(".view-btn").forEach(btn=>{
+      btn.classList.toggle("active",
+        (btn.textContent.trim() === "表格" && viewMode === "table") ||
+        (btn.textContent.trim() === "卡片" && viewMode === "card")
+      );
+    });
+  }
   const SORTMODE_KEY = "ame_commissions_sort_mode"; // "ddl" | "manual"
 
   let data = loadData();
@@ -1305,6 +1188,7 @@ ensureMonthField();
 renderMonthTabs();
 initMonthSelect();
 renderBackupStatus();
+updateViewButtons();
 
     const order = getRenderOrder().filter(i => (data[i].month || inferMonthFromRow(data[i])) === activeMonth);
 
@@ -1414,8 +1298,6 @@ if(viewMode === "card"){
     const badge = document.getElementById("sortModeBadge");
     if(badge) badge.textContent = (sortMode === "ddl") ? "依 DDL 自動排序" : "手動排序";
   }
-activeMonth = loadActiveMonth();
-updateMonthIncome();
 function renderCards(order){
   const wrap = document.getElementById("cardList");
   if(!wrap) return;
@@ -1467,7 +1349,7 @@ function renderCards(order){
 function toggleDraft(i){
   data[i].draft = !data[i].draft;
   saveData();
-  safeRender?.() || render();
+  safeRender();
 }
 
 function safeRender(){
@@ -1481,6 +1363,7 @@ function safeRender(){
     alert("委託清單程式有錯誤（資料還在），請開 F12 → Console 看錯誤訊息。");
   }
 }
+  activeMonth = loadActiveMonth();
   toggleContactCustom();
   safeRender();
 
