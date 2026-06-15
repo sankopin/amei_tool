@@ -11,56 +11,293 @@
     --border:#e5e7eb;
     --text:rgba(0,0,0,.78);
     --muted:rgba(0,0,0,.45);
-    --accent: rgb(110, 180, 135);
-    --accentSoft: rgba(110, 180, 135, .12);
-    --purple: rgb(167, 142, 220);
-    --purpleSoft: rgba(167, 142, 220, .16);
-    --shadow-sm: 0 10px 28px rgba(0,0,0,.08);
+    --accent:rgb(110,180,135);
+    --accentSoft:rgba(110,180,135,.12);
+    --accentBorder:rgba(110,180,135,.30);
+    --purple:rgb(167,142,220);
+    --purpleSoft:rgba(167,142,220,.14);
+    --purpleBorder:rgba(167,142,220,.32);
+    --shadow:0 10px 28px rgba(0,0,0,.08);
+    --shadow-sm:0 6px 18px rgba(0,0,0,.05);
     --r:18px;
+    --sidebar-full:268px;
+    --sidebar-mini:56px;
+    --transition:.22s cubic-bezier(.4,0,.2,1);
   }
-  *{box-sizing:border-box}
+
+  *, *::before, *::after{ box-sizing:border-box; margin:0; padding:0; }
+
   body{
-    margin:0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: ui-sans-serif, system-ui, -apple-system, "PingFang TC","Microsoft JhengHei", Arial;
+    background:var(--bg);
+    color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",Arial;
+    height:100dvh;
+    overflow:hidden;
   }
 
   .app{
     display:grid;
-    grid-template-columns: 280px 1fr;
-    gap: 14px;
-    padding: 14px;
-    height: 100vh;
-  }
-  @media (max-width: 900px){
-    .app{ grid-template-columns: 1fr; height:auto; }
+    grid-template-columns: var(--sidebar-full) 1fr;
+    gap:12px;
+    padding:12px;
+    height:100dvh;
+    transition:grid-template-columns var(--transition);
   }
 
+  /* ── 收合狀態 ── */
+  .app.collapsed{
+    grid-template-columns: var(--sidebar-mini) 1fr;
+  }
+
+  /* ── 通用卡片 ── */
   .card{
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    box-shadow: var(--shadow-sm);
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--r);
+    box-shadow:var(--shadow);
   }
 
+  /* ════════════════════════════
+     SIDEBAR
+  ════════════════════════════ */
   .sidebar{
-    padding: 12px;
     display:flex;
     flex-direction:column;
-    gap: 10px;
-    min-width: 0;
+    gap:8px;
+    padding:12px 10px;
+    overflow:hidden;
+    min-width:0;
+    transition:padding var(--transition);
   }
 
-  .list{
-    padding: 10px;
+  .app.collapsed .sidebar{
+    padding:12px 8px;
+    align-items:center;
+  }
+
+  /* ── 頂部列 ── */
+  .side-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-shrink:0;
+  }
+
+  .side-title{
+    font-size:18px;
+    font-weight:950;
+    letter-spacing:.2px;
+    white-space:nowrap;
+    overflow:hidden;
+    transition:opacity var(--transition), width var(--transition), max-width var(--transition);
+    max-width:180px;
+  }
+  .app.collapsed .side-title{
+    max-width:0;
+    opacity:0;
+    pointer-events:none;
+  }
+
+  /* 收合切換按鈕 */
+  .toggle-btn{
+    width:32px; height:32px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:#fff;
+    cursor:pointer;
+    font-size:15px;
+    transition:background .15s, transform .08s, border-color .15s;
+    box-shadow:var(--shadow-sm);
+  }
+  .toggle-btn:hover{ background:var(--accentSoft); border-color:var(--accentBorder); }
+
+  /* 收合狀態下箭頭反向 */
+  .toggle-btn .arrow{ display:inline-block; transition:transform var(--transition); }
+  .app.collapsed .toggle-btn .arrow{ transform:rotate(180deg); }
+
+  /* ── 搜尋框 ── */
+  .side-search{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:8px 11px;
+    outline:none;
+    background:#fff;
+    font-weight:700;
+    color:var(--text);
+    font-family:inherit;
+    font-size:13px;
+    transition:border-color .15s, box-shadow .15s, opacity var(--transition), max-height var(--transition);
+    flex-shrink:0;
+    max-height:40px;
+  }
+  .side-search:focus{ border-color:var(--accentBorder); box-shadow:0 0 0 4px var(--accentSoft); }
+  .app.collapsed .side-search{
+    opacity:0;
+    max-height:0;
+    padding-top:0;
+    padding-bottom:0;
+    pointer-events:none;
+    border-color:transparent;
+  }
+
+  /* ── 工具列表 ── */
+  .tool-list{
+    flex:1;
+    overflow-y:auto;
+    overflow-x:hidden;
     display:flex;
     flex-direction:column;
-    gap: 8px;
+    gap:4px;
+    padding:2px 0;
+  }
+  .tool-list::-webkit-scrollbar{ width:4px; }
+  .tool-list::-webkit-scrollbar-thumb{ background:rgba(0,0,0,.12); border-radius:4px; }
+
+  /* 分類標題 */
+  .cat-label{
+    padding:2px 6px;
+    font-size:10px;
+    font-weight:900;
+    color:rgba(0,0,0,.32);
+    letter-spacing:.7px;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:4px;
+    white-space:nowrap;
+    overflow:hidden;
+    transition:opacity var(--transition);
+  }
+  .cat-label::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:rgba(0,0,0,.07);
+  }
+  .app.collapsed .cat-label{ opacity:0; pointer-events:none; height:0; margin:0; padding:0; }
+
+  /* 工具按鈕 */
+  .toolbtn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid rgba(0,0,0,.07);
+    background:rgba(255,255,255,.85);
+    border-radius:12px;
+    padding:9px 11px;
+    box-shadow:0 4px 12px rgba(0,0,0,.04);
+    cursor:pointer;
+    width:100%;
+    text-align:left;
+    transition:transform .08s, background .15s, box-shadow .15s, border-color .15s;
+    flex-shrink:0;
+    min-width:0;
+    position:relative;
+  }
+  .toolbtn:hover{
+    background:#fff;
+    transform:translateY(-1px);
+    box-shadow:0 8px 20px rgba(0,0,0,.07);
+  }
+  .toolbtn.active{
+    border-color:var(--accentBorder);
+    background:var(--accentSoft);
+    box-shadow:0 6px 20px rgba(110,180,135,.14);
   }
 
+  /* emoji */
+  .tool-emoji{
+    font-size:17px;
+    flex-shrink:0;
+    line-height:1;
+  }
+
+  /* 文字區（收合時隱藏） */
+  .tool-text{
+    flex:1;
+    min-width:0;
+    overflow:hidden;
+    transition:opacity var(--transition), max-width var(--transition);
+  }
+  .app.collapsed .tool-text{
+    max-width:0;
+    opacity:0;
+    pointer-events:none;
+  }
+
+  .toolname{ font-weight:900; color:rgba(0,0,0,.82); font-size:13px; white-space:nowrap; }
+  .tooldesc{ font-size:11px; color:rgba(0,0,0,.40); margin-top:1px; white-space:nowrap; }
+
+  /* pill */
+  .pill{
+    border:1px solid rgba(110,180,135,.22);
+    background:rgba(110,180,135,.10);
+    color:rgba(0,0,0,.55);
+    font-size:10px;
+    font-weight:900;
+    padding:3px 8px;
+    border-radius:999px;
+    flex-shrink:0;
+    white-space:nowrap;
+    transition:opacity var(--transition), max-width var(--transition), padding var(--transition);
+  }
+  .pill.purple{ border-color:rgba(167,142,220,.25); background:rgba(167,142,220,.11); }
+  .app.collapsed .pill{
+    max-width:0;
+    opacity:0;
+    padding:0;
+    overflow:hidden;
+    pointer-events:none;
+  }
+
+  /* 收合時 tooltip */
+  .app.collapsed .toolbtn::after{
+    content: attr(data-name);
+    position:absolute;
+    left:calc(100% + 10px);
+    top:50%;
+    transform:translateY(-50%);
+    background:rgba(30,30,30,.92);
+    color:#fff;
+    font-size:12px;
+    font-weight:800;
+    padding:5px 10px;
+    border-radius:8px;
+    white-space:nowrap;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .12s;
+    z-index:100;
+  }
+  .app.collapsed .toolbtn:hover::after{ opacity:1; }
+
+  /* ── 底部備注 ── */
+  .side-foot{
+    flex-shrink:0;
+    transition:opacity var(--transition), max-height var(--transition);
+    max-height:60px;
+    overflow:hidden;
+  }
+  .app.collapsed .side-foot{ opacity:0; max-height:0; pointer-events:none; }
+  .side-note{
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.6;
+    background:rgba(0,0,0,.025);
+    border-radius:10px;
+    padding:7px 10px;
+  }
+
+  /* ════════════════════════════
+     PREVIEW / IFRAME
+  ════════════════════════════ */
   .preview{
-    padding: 12px;
+    padding:10px;
     display:flex;
     flex-direction:column;
     min-width:0;
@@ -69,143 +306,61 @@
 
   iframe{
     width:100%;
-    height: 100%;
-    border: 0;
-    border-radius: 16px;
-    background: #fff;
+    height:100%;
+    border:0;
+    border-radius:14px;
+    background:#fff;
   }
-
-  /* === Sidebar head === */
-  .side-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding: 6px 4px 2px;}
-  .side-title{padding: 10px 12px;border-bottom:0;font-size: 22px;font-weight: 950; letter-spacing:.2px;}
-  .side-gear{
-    width: 32px !important;
-    min-width: 32px;
-    height: 32px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:50%;
-    padding:0 !important;
-    flex-shrink:0;
-    border: 1px solid rgba(0,0,0,.08);
-    background: rgba(255,255,255,.88);
-    cursor: pointer;
-    font-size: 16px;
-    transition: background .15s ease, transform .08s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,.06);
-  }
-  .side-gear:hover{
-    background: rgba(110,180,135,.18);
-    transform: scale(1.08);
-  }
-
-  .side-search{width:100%;border:1px solid var(--border);border-radius: 14px;padding: 10px 12px;outline:none;background:#fff;font-weight: 700;color: rgba(0,0,0,.72);font-family:inherit;}
-  .side-search:focus{border-color: rgba(110,180,135,.55);box-shadow: 0 0 0 4px rgba(110,180,135,.12);}
-
-  .side-section{padding: 4px 12px 0;font-size: 11px;font-weight: 900;color: rgba(0,0,0,.38);letter-spacing:.8px;text-transform:uppercase;}
-
-  /* category divider */
-  .cat-label{
-    padding: 2px 4px;
-    font-size: 11px;
-    font-weight: 900;
-    color: rgba(0,0,0,.35);
-    letter-spacing:.6px;
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .cat-label::after{
-    content:"";
-    flex:1;
-    height:1px;
-    background: rgba(0,0,0,.06);
-  }
-
-  /* tool list buttons */
-  .list{padding: 6px 10px 10px;gap:6px;}
-  .toolbtn{
-    display:flex;align-items:center;justify-content:space-between;gap: 10px;
-    border: 1px solid rgba(0,0,0,.09);
-    background: rgba(255,255,255,.90);
-    border-radius: 14px;
-    padding: 10px 13px;
-    box-shadow: 0 6px 18px rgba(0,0,0,.05);
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
-    transition: transform .08s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
-  }
-  .toolbtn:hover{background: rgba(249,250,251,1);transform: translateY(-1px);box-shadow: 0 10px 24px rgba(0,0,0,.08);}
-  .toolbtn.active{
-    border-color: rgba(110,180,135,.75);
-    background: rgba(110,180,135,.08);
-    box-shadow: 0 10px 26px rgba(110,180,135,.14);
-  }
-  .toolname{font-weight: 900;color: rgba(0,0,0,.82);font-size:13px;}
-  .tooldesc{font-size: 11px;color: rgba(0,0,0,.42);margin-top: 2px;}
-  .pill{
-    border: 1px solid rgba(110,180,135,.22);
-    background: rgba(110,180,135,.10);
-    color: rgba(0,0,0,.60);
-    font-size: 11px;
-    font-weight: 900;
-    padding: 5px 10px;
-    border-radius: 999px;
-    flex:0 0 auto;
-    white-space: nowrap;
-  }
-  .pill.purple{
-    border-color: rgba(167,142,220,.28);
-    background: rgba(167,142,220,.12);
-  }
-
-  .side-foot{padding: 0 12px 12px;}
-  .side-note{font-size:11px;color:var(--muted);line-height:1.6;background:rgba(0,0,0,.025);border-radius:12px;padding:8px 10px;}
 </style>
 </head>
 
 <body>
-  <div class="app">
+  <div class="app" id="app">
+
+    <!-- ── Sidebar ── -->
     <div class="card sidebar">
       <div class="side-head">
         <div class="side-title">阿梅工具箱</div>
-        <button class="side-gear" type="button" title="回到首頁" onclick="showHome()">🏠</button>
+        <button class="toggle-btn" id="toggleBtn" type="button" title="收合/展開側邊欄" onclick="toggleSidebar()">
+          <span class="arrow">◀</span>
+        </button>
       </div>
 
       <input class="side-search" id="toolSearch" type="search" placeholder="搜尋工具…" oninput="filterTools()" />
 
-      <div class="list" id="toolList">
+      <div class="tool-list" id="toolList">
         <div class="cat-label">管理</div>
 
-        <button class="toolbtn" data-file="委託清單.html" onclick="openTool('委託清單.html')">
-          <div>
+        <button class="toolbtn" data-file="委託清單.html" data-name="委託清單" onclick="openTool('委託清單.html')">
+          <span class="tool-emoji">📋</span>
+          <div class="tool-text">
             <div class="toolname">委託清單</div>
             <div class="tooldesc">快速追蹤稿件進度</div>
           </div>
           <div class="pill purple">管理</div>
         </button>
 
-        <button class="toolbtn" data-file="該畫畫了.html" onclick="openTool('該畫畫了.html')">
-          <div>
+        <button class="toolbtn" data-file="該畫畫了.html" data-name="畫畫清單" onclick="openTool('該畫畫了.html')">
+          <span class="tool-emoji">🎨</span>
+          <div class="tool-text">
             <div class="toolname">畫畫清單</div>
             <div class="tooldesc">自訂待畫項目</div>
           </div>
           <div class="pill purple">管理</div>
         </button>
 
-        <button class="toolbtn" data-file="阿梅備忘錄.html" onclick="openTool('阿梅備忘錄.html')">
-          <div>
+        <button class="toolbtn" data-file="阿梅備忘錄.html" data-name="阿梅備忘錄" onclick="openTool('阿梅備忘錄.html')">
+          <span class="tool-emoji">📝</span>
+          <div class="tool-text">
             <div class="toolname">阿梅備忘錄</div>
             <div class="tooldesc">分類待辦事項</div>
           </div>
           <div class="pill purple">管理</div>
         </button>
 
-        <button class="toolbtn" data-file="便籤.html" onclick="openTool('便籤.html')">
-          <div>
+        <button class="toolbtn" data-file="便籤.html" data-name="便條紙" onclick="openTool('便籤.html')">
+          <span class="tool-emoji">🗒️</span>
+          <div class="tool-text">
             <div class="toolname">便條紙</div>
             <div class="tooldesc">快速記錄小紙條</div>
           </div>
@@ -214,46 +369,76 @@
 
         <div class="cat-label">圖像</div>
 
-        <button class="toolbtn" data-file="阿梅浮水印工具.html" onclick="openTool('阿梅浮水印工具.html')">
-          <div>
+        <button class="toolbtn" data-file="阿梅浮水印工具.html" data-name="浮水印工具" onclick="openTool('阿梅浮水印工具.html')">
+          <span class="tool-emoji">🖼️</span>
+          <div class="tool-text">
             <div class="toolname">浮水印工具</div>
             <div class="tooldesc">圖片浮水印、批次下載</div>
           </div>
           <div class="pill">圖像</div>
         </button>
 
-        <button class="toolbtn" data-file="長圖拼接.html" onclick="openTool('長圖拼接.html')">
-          <div>
+        <button class="toolbtn" data-file="長圖拼接.html" data-name="拼長圖" onclick="openTool('長圖拼接.html')">
+          <span class="tool-emoji">📐</span>
+          <div class="tool-text">
             <div class="toolname">拼長圖工具</div>
             <div class="tooldesc">固定寬度拼接圖片</div>
           </div>
           <div class="pill">圖像</div>
         </button>
 
-        <button class="toolbtn" data-file="文轉圖.html" onclick="openTool('文轉圖.html')">
-          <div>
+        <button class="toolbtn" data-file="文轉圖.html" data-name="文轉圖" onclick="openTool('文轉圖.html')">
+          <span class="tool-emoji">✏️</span>
+          <div class="tool-text">
             <div class="toolname">文轉圖</div>
             <div class="tooldesc">長文字轉 PNG 圖片</div>
           </div>
           <div class="pill">圖像</div>
         </button>
+
+        <!-- 首頁按鈕 -->
+        <div class="cat-label" style="margin-top:8px;"></div>
+        <button class="toolbtn" data-file="__HOME__" data-name="回首頁" onclick="showHome()">
+          <span class="tool-emoji">🏠</span>
+          <div class="tool-text">
+            <div class="toolname">回首頁</div>
+            <div class="tooldesc">工具總覽</div>
+          </div>
+        </button>
       </div>
 
       <div class="side-foot">
-        <div class="side-note">📁 請把各工具 html 放同一資料夾，工具箱才能正常打開。</div>
+        <div class="side-note">📁 各工具 html 放同一資料夾才能正常開啟。</div>
       </div>
     </div>
 
+    <!-- ── Preview ── -->
     <div class="card preview">
       <iframe id="toolFrame" src=""></iframe>
     </div>
+
   </div>
 
 <script>
+  const app = document.getElementById('app');
+  const COLLAPSED_KEY = 'ame_sidebar_collapsed';
+
+  /* ── 收合狀態 ── */
+  function toggleSidebar(){
+    const next = !app.classList.contains('collapsed');
+    app.classList.toggle('collapsed', next);
+    try{ localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0'); }catch(e){}
+  }
+
+  // 讀取上次狀態
+  try{
+    if(localStorage.getItem(COLLAPSED_KEY) === '1') app.classList.add('collapsed');
+  }catch(e){}
+
+  /* ── 工具切換 ── */
   function setActive(file){
     document.querySelectorAll('.toolbtn').forEach(btn=>{
-      const f = btn.getAttribute('data-file');
-      btn.classList.toggle('active', f === file);
+      btn.classList.toggle('active', btn.getAttribute('data-file') === file);
     });
   }
 
@@ -264,6 +449,7 @@
     setActive(src);
   }
 
+  /* ── 首頁 ── */
   function showHome(){
     const frame = document.getElementById('toolFrame');
     frame.removeAttribute('src');
@@ -279,82 +465,79 @@
     const q = quotes[Math.floor(Math.random()*quotes.length)];
 
     const tools = [
-      { name:"委託清單", desc:"追蹤稿件進度", file:"委託清單.html", cat:"管理", emoji:"📋" },
-      { name:"畫畫清單", desc:"自訂待畫項目", file:"該畫畫了.html", cat:"管理", emoji:"🎨" },
-      { name:"阿梅備忘錄", desc:"分類待辦事項", file:"阿梅備忘錄.html", cat:"管理", emoji:"📝" },
-      { name:"便條紙", desc:"快速記錄", file:"便籤.html", cat:"管理", emoji:"🗒️" },
-      { name:"浮水印工具", desc:"圖片浮水印", file:"阿梅浮水印工具.html", cat:"圖像", emoji:"🖼️" },
-      { name:"拼長圖", desc:"固定寬度拼接", file:"長圖拼接.html", cat:"圖像", emoji:"📐" },
-      { name:"文轉圖", desc:"文字轉 PNG", file:"文轉圖.html", cat:"圖像", emoji:"✏️" },
+      { name:"委託清單",   desc:"追蹤稿件進度",   file:"委託清單.html",     cat:"管理", emoji:"📋" },
+      { name:"畫畫清單",   desc:"自訂待畫項目",   file:"該畫畫了.html",     cat:"管理", emoji:"🎨" },
+      { name:"阿梅備忘錄", desc:"分類待辦事項",   file:"阿梅備忘錄.html",   cat:"管理", emoji:"📝" },
+      { name:"便條紙",     desc:"快速記錄",       file:"便籤.html",         cat:"管理", emoji:"🗒️" },
+      { name:"浮水印工具", desc:"圖片浮水印",     file:"阿梅浮水印工具.html",cat:"圖像", emoji:"🖼️" },
+      { name:"拼長圖",     desc:"固定寬度拼接",   file:"長圖拼接.html",     cat:"圖像", emoji:"📐" },
+      { name:"文轉圖",     desc:"文字轉 PNG",     file:"文轉圖.html",       cat:"圖像", emoji:"✏️" },
     ];
 
-    const toolCards = tools.map(t => `
+    const cards = tools.map(t=>`
       <button onclick="parent.openTool('${t.file}')" style="
         display:flex;align-items:center;gap:12px;
-        border:1px solid rgba(0,0,0,.09);border-radius:14px;
-        background:#fff;padding:12px 14px;
-        cursor:pointer;text-align:left;width:100%;
-        box-shadow:0 6px 16px rgba(0,0,0,.05);
-        transition:transform .08s,background .15s;
+        border:1px solid rgba(0,0,0,.08);border-radius:14px;
+        background:#fff;padding:11px 13px;cursor:pointer;text-align:left;width:100%;
+        box-shadow:0 5px 14px rgba(0,0,0,.05);
+        transition:transform .08s,background .15s,box-shadow .15s;
         font-family:ui-sans-serif,system-ui,-apple-system,'PingFang TC',Arial;
-      " onmouseover="this.style.transform='translateY(-1px)';this.style.background='#f9fafb'"
-         onmouseout="this.style.transform='';this.style.background='#fff'">
+      " onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 10px 22px rgba(0,0,0,.08)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='0 5px 14px rgba(0,0,0,.05)'">
         <span style="font-size:20px;flex-shrink:0;">${t.emoji}</span>
-        <div>
+        <div style="flex:1;min-width:0;">
           <div style="font-weight:900;font-size:13px;color:rgba(0,0,0,.82);">${t.name}</div>
-          <div style="font-size:11px;color:rgba(0,0,0,.42);margin-top:2px;">${t.desc}</div>
+          <div style="font-size:11px;color:rgba(0,0,0,.40);margin-top:2px;">${t.desc}</div>
         </div>
-        <span style="margin-left:auto;font-size:11px;font-weight:900;padding:4px 9px;border-radius:999px;
-          background:${t.cat==='圖像'?'rgba(110,180,135,.10)':'rgba(167,142,220,.12)'};
-          border:1px solid ${t.cat==='圖像'?'rgba(110,180,135,.22)':'rgba(167,142,220,.28)'};
-          color:rgba(0,0,0,.55);white-space:nowrap;">${t.cat}</span>
-      </button>
-    `).join('');
+        <span style="font-size:10px;font-weight:900;padding:3px 9px;border-radius:999px;flex-shrink:0;
+          background:${t.cat==='圖像'?'rgba(110,180,135,.10)':'rgba(167,142,220,.11)'};
+          border:1px solid ${t.cat==='圖像'?'rgba(110,180,135,.22)':'rgba(167,142,220,.25)'};
+          color:rgba(0,0,0,.50);">${t.cat}</span>
+      </button>`).join('');
 
-    const doc = `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HOME</title><style>
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{background:#f3f4f6;font-family:ui-sans-serif,system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',Arial;padding:18px;color:rgba(0,0,0,.78);}
-      .hero{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px 22px;box-shadow:0 10px 28px rgba(0,0,0,.07);margin-bottom:14px;}
-      .hero h2{font-size:18px;font-weight:950;margin-bottom:6px;color:rgba(0,0,0,.85);}
-      .hero p{font-size:13px;color:rgba(0,0,0,.48);line-height:1.6;}
-      .quote{margin-top:14px;padding:13px 16px;border-radius:14px;border:1px solid rgba(110,180,135,.28);background:rgba(110,180,135,.08);font-weight:900;color:rgba(0,0,0,.72);font-size:14px;line-height:1.5;}
-      .section-label{font-size:11px;font-weight:900;color:rgba(0,0,0,.38);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;padding:0 2px;}
-      .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-      @media(max-width:600px){.grid{grid-template-columns:1fr}}
-    </style></head><body>
-      <div class="hero">
-        <h2>阿梅工具箱 🧰</h2>
-        <p>今天也一起把事情做完吧。點左側工具或下方快速入口。</p>
-        <div class="quote">${q}</div>
-      </div>
-      <div class="section-label">快速入口</div>
-      <div class="grid">${toolCards}</div>
-    </body></html>`;
+    frame.srcdoc = `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>首頁</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#f3f4f6;font-family:ui-sans-serif,system-ui,-apple-system,'PingFang TC','Microsoft JhengHei',Arial;padding:18px;color:rgba(0,0,0,.78);}
+  .hero{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px 22px;box-shadow:0 10px 28px rgba(0,0,0,.07);margin-bottom:14px;}
+  .hero h2{font-size:18px;font-weight:950;margin-bottom:6px;}
+  .hero p{font-size:13px;color:rgba(0,0,0,.48);line-height:1.6;}
+  .quote{margin-top:12px;padding:12px 15px;border-radius:13px;border:1px solid rgba(110,180,135,.28);background:rgba(110,180,135,.08);font-weight:900;color:rgba(0,0,0,.70);font-size:13px;line-height:1.55;}
+  .label{font-size:10px;font-weight:900;color:rgba(0,0,0,.35);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px;padding:0 2px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  @media(max-width:480px){.grid{grid-template-columns:1fr}}
+</style></head><body>
+  <div class="hero">
+    <h2>阿梅工具箱 🧰</h2>
+    <p>今天也一起把事情做完吧。</p>
+    <div class="quote">${q}</div>
+  </div>
+  <div class="label">快速入口</div>
+  <div class="grid">${cards}</div>
+</body></html>`;
 
-    frame.srcdoc = doc;
     setActive('__HOME__');
   }
 
+  /* ── 搜尋 ── */
   function filterTools(){
-    const q = (document.getElementById('toolSearch').value || '').trim().toLowerCase();
+    const q = (document.getElementById('toolSearch').value||'').trim().toLowerCase();
     document.querySelectorAll('#toolList .toolbtn').forEach(btn=>{
       const txt = btn.innerText.toLowerCase();
       btn.style.display = (!q || txt.includes(q)) ? '' : 'none';
     });
-    // hide category labels if all buttons below are hidden
-    document.querySelectorAll('#toolList .cat-label').forEach(label => {
-      let sib = label.nextElementSibling;
-      let anyVisible = false;
+    document.querySelectorAll('#toolList .cat-label').forEach(label=>{
+      let sib = label.nextElementSibling, any = false;
       while(sib && !sib.classList.contains('cat-label')){
-        if(sib.style.display !== 'none') anyVisible = true;
+        if(sib.style.display !== 'none') any = true;
         sib = sib.nextElementSibling;
       }
-      label.style.display = anyVisible ? '' : 'none';
+      label.style.display = any ? '' : 'none';
     });
   }
 
   window.addEventListener('load', ()=>{ showHome(); });
 </script>
-
 </body>
 </html>
