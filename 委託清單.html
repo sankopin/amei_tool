@@ -13,158 +13,184 @@
     --muted:rgba(0,0,0,.48);
     --accent:rgb(110,180,135);
     --accentSoft:rgba(110,180,135,.12);
+    --accentBorder:rgba(110,180,135,.30);
     --purple:rgb(167,142,220);
-    --purpleSoft:rgba(167,142,220,.16);
+    --purpleSoft:rgba(167,142,220,.14);
+    --purpleBorder:rgba(167,142,220,.35);
     --danger:rgb(164,43,57);
-    --warning:rgb(231,179,34);
-    --shadow-sm:0 10px 28px rgba(0,0,0,.08);
-    --radius:16px;
-    --form-gap:12px;
-    --cell-pad:8px;
+    --shadow:0 10px 28px rgba(0,0,0,.07);
+    --shadow-sm:0 6px 18px rgba(0,0,0,.05);
+    --radius:18px;
+    --form-gap:10px;
+    --cell-pad:8px 9px;
   }
 
-  *{ box-sizing:border-box; }
+  *, *::before, *::after{ box-sizing:border-box; margin:0; padding:0; }
 
   body{
-    margin:0;
-    padding:24px;
+    padding:20px 16px 48px;
     background:var(--bg);
     color:var(--text);
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif;
+    font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",Arial;
+    font-size:13px;
   }
 
-  h1{
-    margin:0 0 16px;
-    font-size:20px;
-    font-weight:950;
-    letter-spacing:.2px;
-  }
+  h1{ font-size:20px; font-weight:950; margin-bottom:16px; letter-spacing:.2px; }
 
-  a{
-    color:var(--accent);
-    text-decoration:none;
-    font-weight:800;
-  }
+  a{ color:var(--accent); text-decoration:none; font-weight:800; }
+  a:hover{ text-decoration:underline; }
 
+  /* ===== 通用卡片 ===== */
   .card{
     background:var(--panel);
     border:1px solid var(--border);
     border-radius:var(--radius);
-    box-shadow:var(--shadow-sm);
-    padding:16px;
-    margin-bottom:20px;
+    box-shadow:var(--shadow);
+    padding:16px 18px;
+    margin-bottom:14px;
   }
 
-  /* ===== Form groups ===== */
-  .form-groups{
-    display:grid;
-    gap:12px;
-  }
+  /* ===== 表單 fieldset 分組 ===== */
+  .form-groups{ display:grid; gap:10px; }
 
   .form-group{
     border:1px solid var(--border);
-    border-radius:16px;
-    padding:14px;
-    background:rgba(255,255,255,.72);
+    border-radius:14px;
+    padding:12px 14px 14px;
+    background:#fff;
   }
 
   .form-group legend{
-    padding:0 6px;
-    color:rgba(0,0,0,.62);
-    font-size:12px;
+    padding:0 7px;
+    font-size:11px;
     font-weight:950;
+    color:var(--muted);
+    letter-spacing:.5px;
+    text-transform:uppercase;
   }
 
   .form{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
     gap:var(--form-gap);
+    margin-top:10px;
   }
 
   .form label{
     display:flex;
     flex-direction:column;
-    gap:6px;
-    color:rgba(0,0,0,.58);
+    gap:5px;
     font-size:12px;
-    font-weight:800;
+    font-weight:700;
+    color:var(--muted);
   }
 
-  input, select{
+  input:not([type="checkbox"]):not([type="file"]),
+  select{
     width:100%;
-    padding:9px 10px;
-    border:1px solid #ddd;
-    border-radius:10px;
+    padding:9px 11px;
+    border:1px solid var(--border);
+    border-radius:11px;
     background:#fff;
     color:var(--text);
     font-size:13px;
+    font-family:inherit;
+    transition:border-color .15s, box-shadow .15s;
   }
-
   input:focus, select:focus{
     outline:none;
-    border-color:rgba(110,180,135,.55);
-    box-shadow:0 0 0 4px rgba(110,180,135,.14);
+    border-color:var(--accentBorder);
+    box-shadow:0 0 0 4px var(--accentSoft);
   }
 
+  /* ===== 按鈕通則 ===== */
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    transition:transform .06s ease, background .15s ease, box-shadow .15s ease;
+  }
+  button:active{ transform:translateY(1px); }
+
+  /* ===== 表單按鈕列 ===== */
   .row-actions{
     display:flex;
     flex-wrap:wrap;
     gap:10px;
     align-items:center;
-    margin-top:12px;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
   }
 
-  button{
-    border:none;
+  /* 新增委託（主要按鈕） */
+  .row-actions > button:first-child{
+    padding:10px 18px;
     border-radius:999px;
-    padding:10px 14px;
+    border:none;
     background:var(--accent);
     color:#fff;
     font-weight:900;
-    cursor:pointer;
-    transition:background .15s ease, transform .08s ease, border-color .15s ease;
+    font-size:13px;
   }
+  .row-actions > button:first-child:hover{ background:rgb(90,160,115); }
 
-  button:hover{ transform:translateY(-1px); }
-
-  button.secondary,
-  .btn-icon,
-  .btn-mini,
-  .contact-edit,
-  .backup-status button{
+  /* 次要按鈕 */
+  button.secondary{
+    padding:10px 16px;
+    border-radius:999px;
     border:1px solid var(--border);
     background:#fff;
-    color:rgba(0,0,0,.72);
+    color:var(--text);
+    font-weight:900;
+    font-size:13px;
   }
+  button.secondary:hover{ background:#f9fafb; box-shadow:var(--shadow-sm); }
 
-  .hint{
-    color:var(--muted);
+  /* 排序 badge */
+  .sort-badge{
+    padding:5px 12px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    background:#fff;
     font-size:12px;
+    font-weight:800;
+    color:var(--muted);
   }
 
-  /* ===== Month / backup controls ===== */
-  .month-tabs{
+  .hint{ color:var(--muted); font-size:12px; }
+
+  /* ===== 控制列（月份、收入、備份、視圖） ===== */
+  .list-controls{
     display:flex;
     flex-wrap:wrap;
     gap:8px;
-    margin:0 0 12px;
+    align-items:center;
+    margin-bottom:12px;
+  }
+
+  .month-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-bottom:10px;
   }
 
   .month-tab{
     border:1px solid var(--border);
     background:#fff;
-    color:rgba(0,0,0,.70);
-    padding:8px 12px;
+    color:var(--muted);
+    padding:6px 13px;
     border-radius:999px;
     font-size:12px;
     font-weight:900;
+    cursor:pointer;
+    transition:background .15s, border-color .15s;
   }
-
-  .month-tab:hover{ background:#f7f7f7; }
-
+  .month-tab:hover{ background:#f3f4f6; }
   .month-tab.active{
-    border-color:rgba(110,180,135,.55);
+    border-color:var(--accentBorder);
     background:var(--accentSoft);
+    color:rgba(0,0,0,.72);
   }
 
   .month-income,
@@ -172,43 +198,64 @@
     display:inline-flex;
     flex-wrap:wrap;
     align-items:center;
-    gap:10px;
-    margin:10px 8px 14px 0;
-    padding:9px 12px;
+    gap:8px;
+    margin-bottom:10px;
+    padding:8px 13px;
     border-radius:12px;
     font-size:12px;
     font-weight:900;
   }
-
   .month-income{
     background:var(--accentSoft);
-    border:1px solid rgba(110,180,135,.30);
+    border:1px solid var(--accentBorder);
     color:rgba(0,0,0,.75);
   }
-
   .backup-status{
     background:var(--purpleSoft);
-    border:1px solid rgba(167,142,220,.28);
+    border:1px solid var(--purpleBorder);
     color:rgba(0,0,0,.70);
   }
-
   .backup-status button{
-    padding:4px 8px;
-    border-radius:10px;
+    padding:4px 9px;
+    border-radius:9px;
+    border:1px solid var(--border);
+    background:#fff;
     font-size:12px;
+    font-weight:900;
+    color:var(--text);
   }
-
-  .backup-status button:hover{ background:#f7f7f7; }
-
+  .backup-status button:hover{ background:#f3f4f6; }
   .backup-restore-btn{
-    background:rgba(164,43,57,.12) !important;
+    background:rgba(164,43,57,.08) !important;
     border-color:rgba(164,43,57,.35) !important;
     color:var(--danger) !important;
   }
+  .backup-restore-btn:hover{ background:rgba(164,43,57,.15) !important; }
 
-  /* ===== Table ===== */
+  /* 視圖切換 */
+  .view-switch{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .view-btn{
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--muted);
+    padding:6px 13px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .view-btn:hover{ background:var(--purpleSoft); border-color:var(--purpleBorder); }
+  .view-btn.active{ background:var(--purpleSoft); border-color:var(--purpleBorder); color:var(--text); }
+
+  /* ===== 表格 ===== */
   .table-wrap{
-    overflow:auto;
+    overflow-x:auto;
     border:1px solid var(--border);
     border-radius:14px;
   }
@@ -223,56 +270,61 @@
 
   th, td{
     padding:var(--cell-pad);
-    border-bottom:1px solid #eee;
+    border-bottom:1px solid var(--border);
     text-align:left;
     vertical-align:middle;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
   }
+  tr:last-child td{ border-bottom:none; }
 
   th{
     position:sticky;
     top:0;
     z-index:1;
     background:#fafafa;
-    color:rgba(0,0,0,.66);
+    color:var(--muted);
     font-weight:950;
+    font-size:11px;
   }
 
-  td.td-wide, th.td-wide{ white-space:normal; }
+  #list tr:hover{ background:var(--purpleSoft) !important; }
+  tr.urgent{ background:rgba(220,38,38,.06); }
+  tr.warning{ background:rgba(234,179,8,.08); }
+  tr.done{ color:#aaa; background:#fcfcfc; }
+
   .col-narrow-center, td.col-narrow-center{ text-align:center; }
   .col-days{ text-align:center; }
   td.col-pay{ overflow:hidden; }
+  td.td-wide, th.td-wide{ white-space:normal; }
 
-  #list tr:hover{ background:var(--purpleSoft) !important; }
-
-  tr.urgent{ background:rgba(220,38,38,.06); }
-  tr.warning{ background:rgba(234,179,8,.08); }
-  tr.done{
-    color:#aaa;
-    background:#fcfcfc;
-  }
-
+  /* 倒數 pill */
   .pill{
     display:inline-flex;
     align-items:center;
-    gap:6px;
-    padding:4px 8px;
-    border:1px solid rgba(110,180,135,.18);
+    padding:3px 9px;
+    border:1px solid var(--accentBorder);
     border-radius:999px;
     background:var(--accentSoft);
-    color:#1f6b41;
+    color:rgb(40,120,75);
     font-size:11px;
     font-weight:900;
   }
 
+  /* 表格內小輸入框 */
   .tbl-input{
     width:50px;
     max-width:50px;
-    padding:6px 8px;
+    padding:5px 7px;
+    border-radius:9px;
+    border:1px solid var(--border);
     font-size:12px;
+    font-family:inherit;
+    background:#fff;
+    color:var(--text);
   }
+  .tbl-input:focus{ border-color:var(--accentBorder); box-shadow:0 0 0 3px var(--accentSoft); }
 
   input[type="date"].tbl-input{
     width:100px !important;
@@ -282,236 +334,165 @@
   .tbl-note{
     width:125px;
     max-width:125px;
-    padding:6px 8px;
+    padding:5px 7px;
+    border-radius:9px;
+    border:1px solid var(--border);
     font-size:12px;
+    font-family:inherit;
+    background:#fff;
+    color:var(--text);
   }
+  .tbl-note:focus{ border-color:var(--accentBorder); box-shadow:0 0 0 3px var(--accentSoft); }
 
-  .linkrow{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    flex-wrap:wrap;
-  }
-
+  /* 聯絡欄 */
+  .linkrow{ display:flex; align-items:center; gap:5px; }
   .linkrow-contact{
     display:flex;
     align-items:center;
-    flex-wrap:nowrap !important;
-    gap:6px;
+    flex-wrap:nowrap;
+    gap:5px;
   }
-
   .linkrow-contact a,
   .linkrow-contact span{
     min-width:0;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
+    flex:1;
   }
-
   .linkrow-contact button{ flex:0 0 auto; }
+  td.col-contact{ display:table-cell !important; vertical-align:middle; }
 
-  .contact-edit{
-    border-radius:6px;
-    padding:2px 6px;
-    color:var(--purple) !important;
-    font-size:12px;
-  }
-
-  .contact-edit:hover{
-    background:var(--purpleSoft);
-    border-color:rgba(167,142,220,.45);
-  }
-
+  /* 小按鈕群 */
   .btn-icon{
-    border-radius:12px;
-    padding:8px 10px;
-    font-size:12px;
-  }
-
-  .btn-icon:hover{ background:#fafafa; }
-
-  .btn-order{
-    width:28px;
-    height:28px;
-    padding:0;
-    border:1px solid rgba(167,142,220,.45);
-    border-radius:50%;
-    background:#fff !important;
-    color:var(--purple) !important;
-    line-height:26px;
-    text-align:center;
-    font-size:11px;
-  }
-
-  .btn-order:hover{
-    background:var(--purpleSoft) !important;
-    border-color:rgba(167,142,220,.65);
-  }
-
-  .col-pay select{
-    width:100% !important;
-    max-width:100% !important;
-    box-sizing:border-box;
-    appearance:none;
-    -webkit-appearance:none;
-    -moz-appearance:none;
-    padding:4px 22px 4px 8px;
-    border:1px solid transparent;
-    border-radius:999px;
+    padding:5px 9px;
+    border-radius:9px;
+    border:1px solid rgba(220,38,38,.25);
+    background:rgba(220,38,38,.07);
     font-size:12px;
     font-weight:900;
-    cursor:pointer;
-    background-repeat:no-repeat;
-    background-image:
-      linear-gradient(45deg, transparent 50%, rgba(0,0,0,.45) 50%),
-      linear-gradient(135deg, rgba(0,0,0,.45) 50%, transparent 50%);
-    background-position:right 12px center, right 7px center;
-    background-size:6px 6px, 6px 6px;
-  }
-
-  .pay-unpaid{
-    background-color:rgba(220,38,38,.12);
-    border-color:rgba(220,38,38,.25);
     color:rgb(153,27,27);
   }
+  .btn-icon:hover{ background:rgba(220,38,38,.12); }
 
-  .pay-deposit{
-    background-color:rgba(37,99,235,.12);
-    border-color:rgba(37,99,235,.25);
-    color:rgb(29,78,216);
+  .contact-edit{
+    flex:0 0 auto;
+    padding:3px 7px;
+    border-radius:7px;
+    border:1px solid var(--purpleBorder);
+    background:#fff;
+    color:var(--purple);
+    font-size:12px;
+    font-weight:900;
   }
+  .contact-edit:hover{ background:var(--purpleSoft); }
 
-  .pay-paid{
-    background-color:rgba(22,163,74,.12);
-    border-color:rgba(22,163,74,.25);
-    color:rgb(21,128,61);
+  .btn-order{
+    width:26px; height:26px;
+    border-radius:50%;
+    border:1px solid var(--purpleBorder);
+    background:#fff;
+    color:var(--purple);
+    font-size:11px;
+    font-weight:900;
+    display:flex; align-items:center; justify-content:center;
+    padding:0;
   }
+  .btn-order:hover{ background:var(--purpleSoft); }
 
+  /* 付款狀態 select */
+  .col-pay select{
+    width:100%;
+    appearance:none;
+    -webkit-appearance:none;
+    padding:4px 22px 4px 9px;
+    border:1px solid transparent;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:900;
+    font-family:inherit;
+    cursor:pointer;
+    background-repeat:no-repeat;
+    background-position:right 8px center, right 4px center;
+    background-size:5px 5px, 5px 5px;
+    background-image:
+      linear-gradient(45deg, transparent 50%, rgba(0,0,0,.4) 50%),
+      linear-gradient(135deg, rgba(0,0,0,.4) 50%, transparent 50%);
+    outline:none;
+  }
+  .pay-unpaid{ background-color:rgba(220,38,38,.10); border-color:rgba(220,38,38,.22); color:rgb(153,27,27); }
+  .pay-deposit{ background-color:rgba(37,99,235,.10); border-color:rgba(37,99,235,.22); color:rgb(29,78,216); }
+  .pay-paid{ background-color:rgba(22,163,74,.10); border-color:rgba(22,163,74,.22); color:rgb(21,128,61); }
+
+  /* 完成列全部轉灰 */
   tr.done .pill,
+  tr.done input,
+  tr.done a{ color:#bbb !important; }
   tr.done .col-pay select,
   tr.done .col-pay select.pay-unpaid,
   tr.done .col-pay select.pay-deposit,
   tr.done .col-pay select.pay-paid{
     background-color:#f2f3f4 !important;
-    border-color:#dedfe2 !important;
-    color:#9aa0a6 !important;
+    border-color:#e0e0e0 !important;
+    color:#aaa !important;
   }
-
   tr.done button{
     background:#f2f3f4 !important;
-    border-color:#dedfe2 !important;
-    color:#9aa0a6 !important;
+    border-color:#e0e0e0 !important;
+    color:#bbb !important;
     box-shadow:none !important;
   }
 
-  tr.done a{ color:#9aa0a6 !important; }
-
-  tr.done input{
-    background:#fafafa;
-    border-color:#e6e6e6;
-    color:#9aa0a6;
-  }
-
-  /* ===== Card view ===== */
+  /* ===== 卡片 view ===== */
   .card-list{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
     gap:12px;
-    margin-top:12px;
+    margin-top:4px;
   }
 
-  #cardList .card{
-    margin-bottom:0;
-    padding:12px;
-    border-color:rgba(0,0,0,.08);
+  .comm-card{
+    border:1px solid var(--border);
     border-radius:14px;
-    background:rgba(255,255,255,.85);
-    box-shadow:0 8px 18px rgba(0,0,0,.06);
-    transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+    padding:13px 14px;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
   }
-
-  #cardList .card:hover{
-    background:rgba(255,255,255,.9);
-    border-color:rgba(167,142,220,.7);
-    box-shadow:0 12px 28px rgba(0,0,0,.12);
-    transform:translateY(-4px);
+  .comm-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 14px 30px rgba(0,0,0,.10);
+    border-color:var(--purpleBorder);
   }
+  .comm-card.urgent{ border-color:rgba(220,38,38,.35); background:rgba(220,38,38,.04); }
+  .comm-card.warning{ border-color:rgba(234,179,8,.40); background:rgba(234,179,8,.05); }
+  .comm-card.done{ opacity:.6; filter:grayscale(.2); }
 
-  .card-top{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    margin-bottom:8px;
-  }
-
+  .card-top{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
   .card-name{
-    color:var(--purple);
-    font-size:18px;
-    font-weight:950;
-    letter-spacing:.5px;
-    text-shadow:0 1px 0 rgba(255,255,255,.6);
+    font-weight:950; font-size:16px; color:var(--purple);
+    flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
-
   .card-pill{
-    margin-left:auto;
-    padding:4px 10px;
+    padding:3px 10px;
     border-radius:999px;
-    background:rgba(0,0,0,.06);
-    font-size:12px;
+    font-size:11px;
     font-weight:900;
-  }
-
-  .card-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    color:rgba(0,0,0,.72);
-    font-size:13px;
-  }
-
-  .card-row b{ color:rgba(0,0,0,.9); }
-
-  #cardList .card.urgent{
-    border-color:rgba(164,43,57,.35);
-    background:rgba(164,43,57,.06);
-  }
-
-  #cardList .card.warning{
-    border-color:rgba(231,179,34,.35);
-    background:rgba(231,179,34,.08);
-  }
-
-  #cardList .card.done{
-    opacity:.6;
-    filter:grayscale(.2);
-  }
-
-  .view-switch{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    margin:0 10px;
-  }
-
-  .view-btn{
-    border:1px solid rgba(0,0,0,.12);
-    border-radius:999px;
-    background:rgba(255,255,255,.8);
-    color:#222;
-    padding:5px 12px;
-    font-size:12px;
-    font-weight:900;
-  }
-
-  .view-btn:hover{
     background:var(--purpleSoft);
-    border-color:rgba(167,142,220,.6);
+    border:1px solid var(--purpleBorder);
+    color:rgba(0,0,0,.60);
+    flex-shrink:0;
   }
+  .card-row{ font-size:12px; color:rgba(0,0,0,.65); margin-bottom:4px; line-height:1.5; }
+  .card-row b{ color:rgba(0,0,0,.82); font-weight:800; }
+  .card-actions{
+    display:flex; gap:8px; align-items:center;
+    margin-top:10px; padding-top:10px;
+    border-top:1px solid var(--border); flex-wrap:wrap;
+  }
+  .card-chk{ display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; cursor:pointer; }
 
-  .view-btn.active{
-    background:rgba(167,142,220,.35);
-    border-color:rgba(167,142,220,.8);
-  }
+  input[type="checkbox"]{ width:15px; height:15px; accent-color:var(--accent); cursor:pointer; }
 </style>
 </head>
 <body>
@@ -605,34 +586,40 @@
 
   <div class="row-actions">
     <button type="button" onclick="addRow()">新增委託</button>
-<button type="button" class="secondary" onclick="toggleSortMode()">切換排序</button>
-<span id="sortModeBadge" class="hint"
-  style="padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;">
-  依 DDL 自動排序
-</span>
+    <button type="button" class="secondary" onclick="toggleSortMode()">切換排序</button>
+    <span id="sortModeBadge" class="sort-badge">依 DDL 自動排序</span>
   </div>
 </div>
 
 <div class="card">
-  <div id="tableWrap" class="table-wrap">
   <div id="monthTabs" class="month-tabs"></div>
+  <div id="monthIncome" class="month-income"></div>
+  <div id="backupStatus" class="backup-status"></div>
+  <input id="importJsonInput" type="file" accept="application/json,.json" style="display:none" onchange="importJsonFile(this.files && this.files[0])">
+
+  <div class="view-switch">
+    <button type="button" class="view-btn" onclick="setViewMode('table')">表格</button>
+    <button type="button" class="view-btn" onclick="setViewMode('card')">卡片</button>
+  </div>
+
+  <div id="tableWrap" class="table-wrap">
     <table>
       <colgroup>
-        <col style="width:70px">   <!-- 順序 -->
-        <col style="width:70px">  <!-- 委託人 -->
-        <col style="width:120px">   <!-- 聯絡 -->
-        <col style="width:110px">  <!-- 項目 -->
-        <col style="width:140px">  <!-- 委託資料 -->
-        <col style="width:130px">  <!-- 開工 -->
-        <col style="width:130px">  <!-- DDL -->
-        <col style="width:90px">   <!-- 倒數 (窄) -->
-        <col style="width:80px">   <!-- 訂金 -->
-        <col style="width:90px">   <!-- 價格 -->
-        <col style="width:100px">  <!-- 付款狀態 -->
-        <col style="width:160px">  <!-- 備註  -->
-        <col style="width:70px">   <!-- 草稿 (窄) -->
-        <col style="width:70px">   <!-- 完成 (窄) -->
-        <col style="width:80px">   <!-- 刪除 (窄) -->
+        <col style="width:70px">
+        <col style="width:70px">
+        <col style="width:120px">
+        <col style="width:110px">
+        <col style="width:140px">
+        <col style="width:130px">
+        <col style="width:130px">
+        <col style="width:90px">
+        <col style="width:80px">
+        <col style="width:90px">
+        <col style="width:100px">
+        <col style="width:160px">
+        <col style="width:70px">
+        <col style="width:70px">
+        <col style="width:80px">
       </colgroup>
       <thead>
         <tr>
@@ -656,14 +643,7 @@
       <tbody id="list"></tbody>
     </table>
   </div>
-<div id="cardList" class="card-list" style="display:none;"></div>
-<div id="monthIncome" class="month-income"></div>
-<div id="backupStatus" class="backup-status"></div>
-<input id="importJsonInput" type="file" accept="application/json,.json" style="display:none" onchange="importJsonFile(this.files && this.files[0])">
-<div class="view-switch">
-  <button type="button" class="view-btn" onclick="setViewMode('table')">表格</button>
-  <button type="button" class="view-btn" onclick="setViewMode('card')">卡片</button>
-</div>
+  <div id="cardList" class="card-list" style="display:none;"></div>
 </div>
 
 <script>
@@ -1309,7 +1289,7 @@ function renderCards(order){
     const dText = r.done ? "X" : ((dleft === null) ? "—" : `${dleft} 天`);
 
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "comm-card";
 
     // 套用你原本的 urgent/warning/done 規則 :contentReference[oaicite:5]{index=5}
     if(!r.done){
@@ -1370,4 +1350,3 @@ function safeRender(){
 </script>
 
 </body>
-</html>
