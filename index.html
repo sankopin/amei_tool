@@ -445,7 +445,11 @@
   function openTool(src){
     const frame = document.getElementById('toolFrame');
     frame.removeAttribute('srcdoc');
-    frame.src = src;
+
+    // GitHub Pages / iframe 容易快取舊檔案，所以每次打開都加一個版本參數
+    const sep = src.includes('?') ? '&' : '?';
+    frame.src = src + sep + 'v=' + Date.now();
+
     setActive(src);
   }
 
