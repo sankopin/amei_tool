@@ -813,6 +813,24 @@ function exportPublicScheduleHtml(){
     return `${m[1]}/${Number(m[2])}`;
   }
 
+  function publicStatus(row){
+    if(row.done) return { text:"已完成", icon:"✅", cls:"status-done" };
+
+    const s = String(row.start || "").trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(s)){
+      return { text:"排隊中", icon:"⏳", cls:"status-wait" };
+    }
+
+    const startDate = new Date(s + "T00:00:00");
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if(startDate > today){
+      return { text:"排隊中", icon:"⏳", cls:"status-wait" };
+    }
+    return { text:"進行中", icon:"🎨", cls:"status-progress" };
+  }
+
   const latestDDL = rows
     .map(r => String(r.ddl || ""))
     .filter(v => /^\d{4}-\d{2}-\d{2}$/.test(v))
@@ -826,7 +844,8 @@ function exportPublicScheduleHtml(){
     const item = escapeHtml(r.item || "未填項目");
     const start = shortDate(r.start);
     const ddl = shortDate(r.ddl);
-    const note = escapeHtml((r.note || "排隊中").trim() || "排隊中");
+    const note = escapeHtml((r.note || "").trim() || "—");
+    const status = publicStatus(r);
 
     return `
       <tr>
@@ -839,11 +858,12 @@ function exportPublicScheduleHtml(){
         <td class="date-cell"><span>${escapeHtml(start)}</span></td>
         <td class="date-cell"><span>${escapeHtml(ddl)}</span></td>
         <td class="note-cell">${note}</td>
+        <td class="status-cell"><span class="status-pill ${status.cls}">${status.icon} ${status.text}</span></td>
       </tr>
     `;
   }).join("") : `
     <tr>
-      <td colspan="6" class="empty-cell">
+      <td colspan="7" class="empty-cell">
         <div class="empty-icon">☁️</div>
         <div class="empty-title">目前沒有公開排單中的委託</div>
         <div class="empty-text">等排單更新後會顯示在這裡。</div>
@@ -946,7 +966,7 @@ function exportPublicScheduleHtml(){
   .table-scroll{overflow-x:auto;}
   table{
     width:100%;
-    min-width:780px;
+    min-width:900px;
     border-collapse:separate;
     border-spacing:0;
   }
@@ -1040,6 +1060,37 @@ function exportPublicScheduleHtml(){
     font-weight:700;
     line-height:1.65;
   }
+  .status-cell{
+    width:132px;
+    white-space:nowrap;
+  }
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    min-width:92px;
+    padding:6px 11px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:950;
+    border:1px solid transparent;
+  }
+  .status-wait{
+    background:rgba(0,0,0,.045);
+    border-color:rgba(0,0,0,.08);
+    color:rgba(0,0,0,.52);
+  }
+  .status-progress{
+    background:var(--purpleSoft);
+    border-color:rgba(167,142,220,.32);
+    color:var(--purple);
+  }
+  .status-done{
+    background:var(--greenSoft);
+    border-color:rgba(110,180,135,.28);
+    color:var(--green);
+  }
   .empty-cell{
     padding:46px 18px;
     text-align:center;
@@ -1091,6 +1142,7 @@ function exportPublicScheduleHtml(){
               <th>開工</th>
               <th>DDL</th>
               <th>備註</th>
+              <th>狀態</th>
             </tr>
           </thead>
           <tbody>
