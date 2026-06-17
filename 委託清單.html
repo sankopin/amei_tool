@@ -791,16 +791,64 @@ function exportPublicScheduleHtml(){
     .filter(r => !r.done && r.public !== false);
 
   const generatedAt = nowTsStr();
-  const rowHtml = rows.length ? rows.map(r => `
+
+  function publicName(name){
+    const raw = String(name || "匿名委託人").trim();
+    if(!raw) return "匿＊";
+    const first = Array.from(raw)[0] || "匿";
+    return first + "＊";
+  }
+
+  function shortDate(dateStr){
+    const s = String(dateStr || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return s || "未定";
+    return `${Number(m[2])}/${Number(m[3])}`;
+  }
+
+  function monthFromDate(dateStr){
+    const s = String(dateStr || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-/);
+    if(!m) return "未定";
+    return `${m[1]}/${Number(m[2])}`;
+  }
+
+  const latestDDL = rows
+    .map(r => String(r.ddl || ""))
+    .filter(v => /^\d{4}-\d{2}-\d{2}$/.test(v))
+    .sort()
+    .at(-1);
+
+  const scheduleUntil = latestDDL ? monthFromDate(latestDDL) : "未定";
+
+  const tableRowsHtml = rows.length ? rows.map((r, idx) => {
+    const name = publicName(r.name);
+    const item = escapeHtml(r.item || "未填項目");
+    const start = shortDate(r.start);
+    const ddl = shortDate(r.ddl);
+    const note = escapeHtml((r.note || "排隊中").trim() || "排隊中");
+
+    return `
+      <tr>
+        <td class="queue-no"><span>#${String(idx + 1).padStart(2, "0")}</span></td>
+        <td class="client-cell">
+          <span class="avatar">${escapeHtml(name.slice(0, 1))}</span>
+          <span class="client-name">${escapeHtml(name)}</span>
+        </td>
+        <td class="item-cell">${item}</td>
+        <td class="date-cell"><span>${escapeHtml(start)}</span></td>
+        <td class="date-cell"><span>${escapeHtml(ddl)}</span></td>
+        <td class="note-cell">${note}</td>
+      </tr>
+    `;
+  }).join("") : `
     <tr>
-      <td>${escapeHtml(r.name || "匿名委託人")}</td>
-      <td>${escapeHtml(r.item || "—")}</td>
-      <td>${escapeHtml(r.start || "—")}</td>
-      <td>${escapeHtml(r.ddl || "—")}</td>
-      <td>${escapeHtml(r.note || "—")}</td>
+      <td colspan="6" class="empty-cell">
+        <div class="empty-icon">☁️</div>
+        <div class="empty-title">目前沒有公開排單中的委託</div>
+        <div class="empty-text">等排單更新後會顯示在這裡。</div>
+      </td>
     </tr>
-  `).join("") : `
-    <tr><td colspan="5" class="empty">目前沒有公開排單中的委託。</td></tr>
   `;
 
   const html = `<!DOCTYPE html>
@@ -808,65 +856,257 @@ function exportPublicScheduleHtml(){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>委託進行狀況</title>
+<title>公開排單</title>
 <style>
   :root{
-    --bg:#f3f4f6;
-    --panel:#fff;
-    --border:#e5e7eb;
+    --bg:#f8f7fc;
+    --panel:#ffffff;
+    --border:#e7e1f4;
+    --line:rgba(167,142,220,.20);
     --text:rgba(0,0,0,.78);
-    --muted:rgba(0,0,0,.48);
-    --accent:rgb(110,180,135);
-    --accentSoft:rgba(110,180,135,.12);
-    --purple:rgb(167,142,220);
-    --purpleSoft:rgba(167,142,220,.14);
-    --shadow:0 10px 28px rgba(0,0,0,.07);
+    --muted:rgba(0,0,0,.50);
+    --purple:rgb(139,109,216);
+    --purple2:rgb(167,142,220);
+    --purpleSoft:rgba(167,142,220,.16);
+    --green:rgb(110,180,135);
+    --greenSoft:rgba(110,180,135,.13);
+    --shadow:0 14px 36px rgba(65,45,110,.10);
   }
   *{box-sizing:border-box}
-  body{margin:0;padding:24px 16px 48px;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",Arial;font-size:14px;}
-  .wrap{max-width:980px;margin:0 auto;}
-  .head{margin-bottom:14px;}
-  h1{font-size:22px;margin:0 0 6px;font-weight:950;}
-  .sub{color:var(--muted);font-size:13px;line-height:1.6;}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:16px;overflow:auto;}
-  table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:720px;}
-  th,td{padding:11px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;}
-  th{font-size:12px;color:var(--muted);background:#fafafa;font-weight:950;position:sticky;top:0;}
+  body{
+    margin:0;
+    padding:38px 18px 56px;
+    background:
+      radial-gradient(circle at top left, rgba(167,142,220,.24), transparent 34%),
+      linear-gradient(180deg, #fbfaff 0%, var(--bg) 42%, #f7f8fb 100%);
+    color:var(--text);
+    font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",Arial;
+    font-size:17px;
+    line-height:1.65;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+  .hero{
+    margin-bottom:18px;
+    padding:24px 26px;
+    border:1px solid rgba(167,142,220,.28);
+    border-radius:26px;
+    background:rgba(255,255,255,.82);
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+    padding:5px 12px;
+    border-radius:999px;
+    background:var(--purpleSoft);
+    color:var(--purple);
+    font-size:13px;
+    font-weight:950;
+  }
+  h1{
+    margin:0;
+    font-size:32px;
+    line-height:1.25;
+    letter-spacing:.4px;
+    color:rgba(0,0,0,.82);
+  }
+  .sub{
+    margin-top:10px;
+    color:var(--muted);
+    font-size:15px;
+  }
+  .stats{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:18px;
+  }
+  .stat{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 14px;
+    border-radius:16px;
+    background:#fff;
+    border:1px solid var(--border);
+    font-size:15px;
+    font-weight:900;
+    color:rgba(0,0,0,.70);
+  }
+  .table-card{
+    overflow:hidden;
+    border:1px solid var(--border);
+    border-radius:24px;
+    background:rgba(255,255,255,.94);
+    box-shadow:0 10px 28px rgba(65,45,110,.08);
+  }
+  .table-scroll{overflow-x:auto;}
+  table{
+    width:100%;
+    min-width:780px;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+  th,td{
+    border-bottom:1px solid var(--line);
+    text-align:left;
+    vertical-align:middle;
+  }
+  th{
+    padding:14px 16px;
+    background:#faf9ff;
+    color:var(--muted);
+    font-size:13px;
+    font-weight:950;
+    letter-spacing:.3px;
+    white-space:nowrap;
+  }
+  td{
+    padding:18px 16px;
+    font-size:16px;
+    color:rgba(0,0,0,.72);
+  }
   tr:last-child td{border-bottom:none;}
-  tbody tr:hover{background:var(--purpleSoft);}
-  td:first-child{font-weight:900;color:var(--purple);}
-  .empty{text-align:center;color:var(--muted);padding:28px 12px;}
-  .footer{margin-top:10px;color:var(--muted);font-size:12px;text-align:right;}
+  tbody tr{transition:background .15s ease;}
+  tbody tr:hover{background:rgba(167,142,220,.08);}
+  .queue-no{width:72px;text-align:center;}
+  .queue-no span{
+    display:inline-flex;
+    justify-content:center;
+    min-width:44px;
+    padding:4px 9px;
+    border-radius:999px;
+    background:var(--purpleSoft);
+    color:var(--purple);
+    font-size:13px;
+    font-weight:950;
+  }
+  .client-cell{
+    width:150px;
+    white-space:nowrap;
+  }
+  .avatar{
+    width:34px;
+    height:34px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    margin-right:10px;
+    border-radius:13px;
+    background:linear-gradient(135deg, rgba(167,142,220,.95), rgba(139,109,216,.85));
+    color:#fff;
+    font-size:16px;
+    font-weight:950;
+    box-shadow:0 7px 16px rgba(139,109,216,.18);
+    vertical-align:middle;
+  }
+  .client-name{
+    color:var(--purple);
+    font-size:20px;
+    font-weight:950;
+    letter-spacing:.4px;
+    vertical-align:middle;
+  }
+  .item-cell{
+    width:210px;
+    color:rgba(0,0,0,.84);
+    font-size:18px;
+    font-weight:950;
+  }
+  .date-cell{
+    width:112px;
+    white-space:nowrap;
+  }
+  .date-cell span{
+    display:inline-flex;
+    align-items:center;
+    padding:6px 11px;
+    border-radius:999px;
+    background:var(--greenSoft);
+    border:1px solid rgba(110,180,135,.28);
+    color:rgba(0,0,0,.70);
+    font-size:15px;
+    font-weight:900;
+  }
+  .note-cell{
+    min-width:220px;
+    white-space:pre-wrap;
+    word-break:break-word;
+    color:rgba(0,0,0,.66);
+    font-size:15px;
+    font-weight:700;
+    line-height:1.65;
+  }
+  .empty-cell{
+    padding:46px 18px;
+    text-align:center;
+    color:var(--muted);
+  }
+  .empty-icon{font-size:34px;margin-bottom:8px;}
+  .empty-title{font-size:20px;font-weight:950;color:rgba(0,0,0,.72);}
+  .empty-text{margin-top:4px;font-size:15px;}
+  .footer{
+    margin-top:18px;
+    color:var(--muted);
+    font-size:13px;
+    text-align:right;
+  }
+  @media (max-width: 700px){
+    body{padding:22px 12px 40px;font-size:16px;}
+    .hero{padding:20px 18px;border-radius:22px;}
+    h1{font-size:27px;}
+    .sub{font-size:14px;}
+    .table-card{border-radius:20px;}
+    th{padding:12px 13px;font-size:12px;}
+    td{padding:15px 13px;}
+    .client-name{font-size:19px;}
+    .item-cell{font-size:17px;}
+  }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="head">
-      <h1>委託進行狀況</h1>
-      <div class="sub">更新時間：${generatedAt}</div>
-    </div>
-    <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>委託人</th>
-            <th>項目</th>
-            <th>開工</th>
-            <th>DDL</th>
-            <th>備註</th>
-          </tr>
-        </thead>
-        <tbody>${rowHtml}</tbody>
-      </table>
-    </div>
-    <div class="footer">Generated by 品</div>
-  </div>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">💜 Commission Queue</div>
+      <h1>阿梅委託排單</h1>
+      <div class="sub">僅顯示已勾選公開、尚未完成的委託。委託人欄位會以首字隱私顯示。</div>
+      <div class="stats">
+        <div class="stat">目前排單：${rows.length} 件</div>
+        <div class="stat">預計排至：${scheduleUntil}</div>
+        <div class="stat">最後更新：${generatedAt}</div>
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>順序</th>
+              <th>委託人</th>
+              <th>項目</th>
+              <th>開工</th>
+              <th>DDL</th>
+              <th>備註</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="footer">Generated by 阿梅委託管理清單</div>
+  </main>
 </body>
 </html>`;
 
   downloadHtmlFile("公開排單.html", html);
 }
-
 function downloadHtmlFile(filename, text){
   const blob = new Blob([text], {type:"text/html;charset=utf-8"});
   const url = URL.createObjectURL(blob);
@@ -897,8 +1137,7 @@ function normalizeImportedData(payload){
     note: x.note ?? "",
     done: !!x.done,
     month: x.month ?? "",
-    draft: !!x.draft,
-    public: x.public !== false
+    draft: !!x.draft
   }));
 }
 
