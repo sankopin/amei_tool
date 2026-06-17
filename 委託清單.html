@@ -308,15 +308,15 @@
     border-radius:999px;
     background:var(--accentSoft);
     color:rgb(40,120,75);
-    font-size:11px;
+    font-size:10px;
     font-weight:900;
   }
 
   /* 表格內小輸入框 */
   .tbl-input{
-    width:50px;
-    max-width:50px;
-    padding:5px 7px;
+    width:78px;
+    max-width:78px;
+    padding:5px 8px;
     border-radius:9px;
     border:1px solid var(--border);
     font-size:12px;
@@ -327,8 +327,8 @@
   .tbl-input:focus{ border-color:var(--accentBorder); box-shadow:0 0 0 3px var(--accentSoft); }
 
   input[type="date"].tbl-input{
-    width:120px !important;
-    max-width:120px !important;
+    width:122px !important;
+    max-width:122px !important;
   }
 
   .tbl-note{
@@ -388,7 +388,7 @@
   .contact-edit:hover{ background:var(--purpleSoft); }
 
   .btn-order{
-    width:26px; height:26px;
+    width:21px; height:21px;
     border-radius:50%;
     border:1px solid var(--purpleBorder);
     background:#fff;
@@ -605,21 +605,21 @@
   <div id="tableWrap" class="table-wrap">
     <table>
       <colgroup>
-        <col style="width:55px">   <!-- 順序 -->
-        <col style="width:70px">   <!-- 委託人 -->
-        <col style="width:120px">  <!-- 聯絡 -->
-        <col style="width:95px">   <!-- 項目 -->
-        <col style="width:115px">  <!-- 委託資料 -->
-        <col style="width:145px">  <!-- 開工 -->
-        <col style="width:145px">  <!-- DDL -->
-        <col style="width:90px">   <!-- 倒數 -->
-        <col style="width:95px">   <!-- 訂金 -->
-        <col style="width:105px">  <!-- 價格 -->
-        <col style="width:100px">  <!-- 付款 -->
-        <col style="width:160px">  <!-- 備註 -->
-        <col style="width:70px">   <!-- 草稿 -->
-        <col style="width:70px">   <!-- 完成 -->
-        <col style="width:80px">   <!-- 刪除 -->
+        <col style="width:52px">   <!-- 順序：縮窄 -->
+        <col style="width:75px">   <!-- 委託人 -->
+        <col style="width:105px">  <!-- 聯絡 -->
+        <col style="width:88px">   <!-- 項目：縮窄 -->
+        <col style="width:105px">  <!-- 委託資料：縮窄 -->
+        <col style="width:148px">  <!-- 開工：加寬 -->
+        <col style="width:148px">  <!-- DDL：加寬 -->
+        <col style="width:76px">   <!-- 倒數 -->
+        <col style="width:100px">  <!-- 訂金：加寬 -->
+        <col style="width:110px">  <!-- 價格：加寬 -->
+        <col style="width:105px">  <!-- 付款狀態 -->
+        <col style="width:145px">  <!-- 備註 -->
+        <col style="width:60px">   <!-- 草稿 -->
+        <col style="width:60px">   <!-- 完成 -->
+        <col style="width:70px">   <!-- 刪除 -->
       </colgroup>
       <thead>
         <tr>
@@ -1204,7 +1204,7 @@ if(viewMode === "card"){
 
       tr.innerHTML = `
          <td class="col-narrow-center">
-          <div style="display:flex; gap:6px; justify-content:center;">
+          <div style="display:flex; gap:3px; justify-content:center;">
             <button class="btn-order" type="button" onclick="moveRow(${i}, -1)" title="上移">▲</button>
             <button class="btn-order" type="button" onclick="moveRow(${i}, 1)" title="下移">▼</button>
           </div>
