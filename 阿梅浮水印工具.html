@@ -184,6 +184,45 @@
     details.section .acc-body{ padding:0 12px 12px; }
     details.section[open]{ }
 
+    /* ── 摺疊區優先級配色 ── */
+    /* 高優先：模式/位置/大小（最常調） */
+    details.section.acc-priority{
+      border-color:var(--accentBorder);
+      background:var(--accentSoft);
+    }
+    details.section.acc-priority > summary{
+      color:rgb(40,110,75);
+    }
+    details.section.acc-priority > summary::after{
+      color:rgb(80,150,115);
+    }
+
+    /* 中優先：上色 / 描邊（正式模式才需要） */
+    details.section.acc-secondary{
+      border-color:rgba(167,142,220,.30);
+      background:rgba(167,142,220,.07);
+    }
+    details.section.acc-secondary > summary{
+      color:rgb(105,80,150);
+    }
+    details.section.acc-secondary > summary::after{
+      color:rgb(140,115,180);
+    }
+
+    /* 文字浮水印摺疊區（紫色系，與上色/描邊一致） */
+    .text-wm-summary{
+      list-style:none;cursor:pointer;padding:12px;
+      display:flex;align-items:center;justify-content:space-between;
+      font-size:13px;font-weight:900;color:rgb(105,80,150);
+      user-select:none;
+    }
+    .text-wm-summary::-webkit-details-marker{display:none;}
+    .text-wm-arrow{
+      font-size:12px;color:rgb(140,115,180);
+      transition:transform .15s ease;
+    }
+    details.acc-text[open] .text-wm-arrow{ transform:rotate(90deg); }
+
     /* 摘要徽章（顯示目前選擇，收合時也看得到） */
     .summary-hint{
       font-size:11px;font-weight:700;color:var(--muted);
@@ -263,19 +302,17 @@
         <div class="hint">可分次上傳，圖片會追加進清單。</div>
       </div>
 
-      <!-- 2. 模式 -->
-      <div class="section">
-        <div class="title">2) 模式</div>
-        <div class="toggle">
-          <button id="modeFormal" class="active" type="button">正式</button>
-          <button id="modeNormal" type="button">普通</button>
-        </div>
-      </div>
-
-      <!-- 3+4. 圖片浮水印：位置 / 大小 / 透明度（摺疊） -->
-      <details class="section" open>
-        <summary>3) 圖片浮水印：位置 / 大小</summary>
+      <!-- 2+3. 模式 + 圖片浮水印：位置 / 大小（摺疊，高優先級） -->
+      <details class="section acc-priority" open>
+        <summary>2) 模式 / 位置 / 大小</summary>
         <div class="acc-body">
+          <div class="kv" style="margin-bottom:4px;">
+            <label>浮水印模式</label>
+            <div class="toggle">
+              <button id="modeFormal" class="active" type="button">正式</button>
+              <button id="modeNormal" type="button">普通</button>
+            </div>
+          </div>
           <div class="kv">
             <label>九宮格</label>
             <select id="posGrid">
@@ -298,8 +335,8 @@
         </div>
       </details>
 
-      <!-- 5. 正式上色（摺疊） -->
-      <details class="section" id="formalPanel">
+      <!-- 5. 正式上色（摺疊，次優先） -->
+      <details class="section acc-secondary" id="formalPanel">
         <summary>4) 正式浮水印：上色 / 描邊</summary>
         <div class="acc-body">
           <div class="row" style="justify-content:space-between;gap:12px;">
@@ -334,11 +371,11 @@
         <div class="hint">普通模式只提供黑/白/灰 + 不透明度。</div>
       </div>
 
-      <!-- 6. 文字浮水印（摺疊） -->
-      <details class="text-wm-section" style="padding:0;">
-        <summary style="list-style:none;cursor:pointer;padding:12px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:900;color:rgba(0,0,0,.75);user-select:none;">
+      <!-- 6. 文字浮水印（摺疊，附加功能） -->
+      <details class="text-wm-section acc-text" style="padding:0;">
+        <summary class="text-wm-summary">
           5) 文字浮水印
-          <span style="font-size:12px;color:rgba(0,0,0,.35);">▸</span>
+          <span class="text-wm-arrow">▸</span>
         </summary>
         <div class="acc-body" style="padding:0 12px 12px;">
 
