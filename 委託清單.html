@@ -225,6 +225,13 @@
     color:var(--text);
   }
   .backup-status button:hover{ background:#f3f4f6; }
+  .copy-btn{
+    background:var(--accentSoft) !important;
+    border-color:var(--accentBorder) !important;
+    color:rgb(40,110,75) !important;
+  }
+  .copy-btn:hover{ background:rgba(110,180,135,.20) !important; }
+  .copy-btn:disabled{ opacity:.7; cursor:default; }
   .backup-restore-btn{
     background:rgba(164,43,57,.08) !important;
     border-color:rgba(164,43,57,.35) !important;
@@ -737,6 +744,8 @@ function renderBackupStatus(){
   const ts = localStorage.getItem(BACKUP_TS_KEY);
   el.innerHTML = `
     💾 自動備份：${ts ? ts : "尚未備份"}
+    <button type="button" class="copy-btn" onclick="copyJsonToClipboard(this)">📋 複製 JSON</button>
+    <button type="button" onclick="pasteJsonFromClipboard()">📥 貼上 JSON</button>
     <button type="button" onclick="exportJson()">匯出 JSON</button>
     <button type="button" onclick="document.getElementById('importJsonInput').click()">讀取 JSON</button>
     <button type="button" onclick="exportPublicScheduleHtml()">匯出公開排單頁</button>
@@ -771,17 +780,50 @@ function downloadTextFile(filename, text){
   URL.revokeObjectURL(url);
 }
 
-function exportJson(){
+function buildJsonPayload(){
   const d = new Date();
-  const p = n => String(n).padStart(2,"0");
-  const stamp = `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
-  const payload = {
+  return {
     app: "阿梅委託管理清單",
     version: 1,
     exportedAt: d.toISOString(),
     data: data
   };
-  downloadTextFile(`ame_commissions_backup_${stamp}.json`, JSON.stringify(payload, null, 2));
+}
+
+function exportJson(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  const stamp = `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+  downloadTextFile(`ame_commissions_backup_${stamp}.json`, JSON.stringify(buildJsonPayload(), null, 2));
+}
+
+async function copyJsonToClipboard(btnEl){
+  const text = JSON.stringify(buildJsonPayload(), null, 2);
+  const originalLabel = btnEl ? btnEl.textContent : "";
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(text);
+    }else{
+      // 後備方案：在不支援 Clipboard API 的環境（例如非 https）手動選取複製
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    if(btnEl){
+      btnEl.textContent = "已複製 ✅";
+      btnEl.disabled = true;
+      setTimeout(()=>{ btnEl.textContent = originalLabel || "📋 複製 JSON"; btnEl.disabled = false; }, 1600);
+    }
+  }catch(e){
+    console.error(e);
+    alert("複製失敗，請改用「匯出 JSON」下載檔案。");
+  }
 }
 
 
@@ -1191,6 +1233,38 @@ function normalizeImportedData(payload){
     month: x.month ?? "",
     draft: !!x.draft
   }));
+}
+
+async function pasteJsonFromClipboard(){
+  let text = "";
+  try{
+    if(navigator.clipboard && navigator.clipboard.readText){
+      text = await navigator.clipboard.readText();
+    }else{
+      alert("此瀏覽器不支援自動讀取剪貼簿，請改用「讀取 JSON」上傳檔案。");
+      return;
+    }
+  }catch(e){
+    alert("無法讀取剪貼簿內容（可能未授權）。請改用「讀取 JSON」上傳檔案。");
+    return;
+  }
+  if(!text || !text.trim()){
+    alert("剪貼簿目前是空的。");
+    return;
+  }
+  try{
+    const payload = JSON.parse(text);
+    const imported = normalizeImportedData(payload);
+    if(!confirm(`從剪貼簿讀到 ${imported.length} 筆委託。要用這份資料取代目前網站內的清單嗎？\n\n建議：匯入前可先按「匯出 JSON」備份目前資料。`)) return;
+    data = imported;
+    saveData();
+    activeMonth = loadActiveMonth();
+    safeRender();
+    alert("已從剪貼簿匯入完成 ✅");
+  }catch(e){
+    console.error(e);
+    alert("剪貼簿內容不是有效的委託清單 JSON 格式。");
+  }
 }
 
 function importJsonFile(file){
