@@ -163,53 +163,45 @@
       background:#fff;padding:8px 10px;font-size:13px;font-family:inherit;
     }
 
+    /* ===== Accordion (details/summary) ===== */
+    details.section{padding:0;overflow:hidden;}
+    details.section > summary{
+      list-style:none;cursor:pointer;
+      padding:12px;
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      font-size:13px;font-weight:900;color:rgba(0,0,0,.75);
+      user-select:none;
+    }
+    details.section > summary::-webkit-details-marker{display:none;}
+    details.section > summary::after{
+      content:"▸";
+      font-size:12px;color:rgba(0,0,0,.35);
+      transition:transform .15s ease;
+      flex-shrink:0;
+    }
+    details.section[open] > summary::after{ transform:rotate(90deg); }
+    details.section > summary:hover{ background:rgba(0,0,0,.02); }
+    details.section .acc-body{ padding:0 12px 12px; }
+    details.section[open]{ }
 
-    /* ===== 簡化控制欄 ===== */
-    details.section,
-    details.text-wm-section{
-      display:block;
+    /* 摘要徽章（顯示目前選擇，收合時也看得到） */
+    .summary-hint{
+      font-size:11px;font-weight:700;color:var(--muted);
+      background:#fff;border:1px solid var(--border);
+      padding:3px 9px;border-radius:999px;
+      margin-left:auto;margin-right:6px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;
     }
-    details.section > summary.title,
-    details.text-wm-section > summary.title{
-      list-style:none;
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      margin:0;
+
+    /* 壓縮設定 */
+    .compress-box{
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+      padding:10px 12px;border-radius:12px;
+      background:var(--accentSoft);border:1px solid var(--accentBorder);
+      margin-top:10px;font-size:12px;
     }
-    details.section > summary.title::-webkit-details-marker,
-    details.text-wm-section > summary.title::-webkit-details-marker{display:none;}
-    details.section > summary.title::after,
-    details.text-wm-section > summary.title::after{
-      content:"展開";
-      font-size:11px;
-      font-weight:900;
-      color:var(--muted);
-      border:1px solid var(--border);
-      background:#fff;
-      padding:3px 8px;
-      border-radius:999px;
-    }
-    details.section[open] > summary.title,
-    details.text-wm-section[open] > summary.title{margin-bottom:10px;}
-    details.section[open] > summary.title::after,
-    details.text-wm-section[open] > summary.title::after{content:"收合";}
-    .quick-note{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:5px 10px;
-      border-radius:999px;
-      background:var(--accentSoft);
-      border:1px solid var(--accentBorder);
-      color:rgba(0,0,0,.62);
-      font-size:12px;
-      font-weight:800;
-    }
-    #textWmBody
- 	 display:block;
-    }	
+    .compress-box label{display:flex;align-items:center;gap:6px;font-weight:800;color:rgba(0,0,0,.72);cursor:pointer;}
+    .compress-box input[type="number"]{width:70px;padding:6px 9px;font-size:12px;}
   </style>
 </head>
 <body>
@@ -218,7 +210,7 @@
   <div class="topbar">
     <div class="topbar-left">
       <h1>阿梅浮水印工具</h1>
-      <p class="sub">右側保留常用設定，進階項目可展開；JPG 下載會自動嘗試壓到 5MB 以內。</p>
+      <p class="sub">圖片浮水印（正式/普通）＋ 文字浮水印（可存範本）。</p>
     </div>
 
     <div class="wmbar" aria-label="圖片浮水印設定">
@@ -280,152 +272,160 @@
         </div>
       </div>
 
-      <!-- 3. 圖片浮水印位置 -->
-      <details class="section">
-        <summary class="title">進階：圖片浮水印位置</summary>
-        <div class="kv">
-          <label>九宮格</label>
-          <select id="posGrid">
-            <option value="TL">左上</option><option value="TC">上中</option><option value="TR">右上</option>
-            <option value="CL">左中</option><option value="CC" selected>正中</option><option value="CR">右中</option>
-            <option value="BL">左下</option><option value="BC">下中</option><option value="BR">右下</option>
-          </select>
-          <label>邊距（px）</label>
-          <input id="margin" type="number" min="0" value="40" />
-          <label>拖拉定位</label>
-          <div class="row">
-            <input id="dragEnable" type="checkbox" />
-            <span style="font-size:12px;color:var(--muted);">正式模式可在預覽上拖浮水印</span>
+      <!-- 3+4. 圖片浮水印：位置 / 大小 / 透明度（摺疊） -->
+      <details class="section" open>
+        <summary>3) 圖片浮水印：位置 / 大小</summary>
+        <div class="acc-body">
+          <div class="kv">
+            <label>九宮格</label>
+            <select id="posGrid">
+              <option value="TL">左上</option><option value="TC">上中</option><option value="TR">右上</option>
+              <option value="CL">左中</option><option value="CC" selected>正中</option><option value="CR">右中</option>
+              <option value="BL">左下</option><option value="BC">下中</option><option value="BR">右下</option>
+            </select>
+            <label>邊距（px）</label>
+            <input id="margin" type="number" min="0" value="40" />
+            <label>拖拉定位</label>
+            <div class="row">
+              <input id="dragEnable" type="checkbox" />
+              <span style="font-size:12px;color:var(--muted);">正式模式可在預覽上拖浮水印</span>
+            </div>
+            <label>浮水印寬度（%）</label>
+            <input id="wmScale" type="range" min="5" max="80" value="18" />
+            <label>不透明度</label>
+            <input id="wmOpacity" type="range" min="0" max="100" value="40" />
           </div>
         </div>
       </details>
 
-      <!-- 4. 大小 / 透明度 -->
-      <div class="section">
-        <div class="title">3) 常用調整</div>
-        <div class="kv">
-          <label>浮水印寬度（%）</label>
-          <input id="wmScale" type="range" min="5" max="80" value="18" />
-          <label>不透明度</label>
-          <input id="wmOpacity" type="range" min="0" max="100" value="40" />
-        </div>
-      </div>
-
-      <!-- 5. 正式上色 -->
+      <!-- 5. 正式上色（摺疊） -->
       <details class="section" id="formalPanel">
-        <summary class="title">進階：正式浮水印上色 / 描邊</summary>
-        <div class="row" style="justify-content:space-between;gap:12px;">
-          <div style="min-width:220px;">
-            <div class="chip">上色</div>
-            <div id="formalSwatches" class="swatches" style="margin-top:8px;"></div>
-            <div class="row" style="margin-top:10px;">
-              <span style="font-size:12px;color:var(--muted);">自訂：</span>
-              <input id="formalColorPicker" type="color" value="#111111" />
-              <button id="applyPicker" class="mini" type="button">套用</button>
+        <summary>4) 正式浮水印：上色 / 描邊</summary>
+        <div class="acc-body">
+          <div class="row" style="justify-content:space-between;gap:12px;">
+            <div style="min-width:220px;">
+              <div class="chip">上色</div>
+              <div id="formalSwatches" class="swatches" style="margin-top:8px;"></div>
+              <div class="row" style="margin-top:10px;">
+                <span style="font-size:12px;color:var(--muted);">自訂：</span>
+                <input id="formalColorPicker" type="color" value="#111111" />
+                <button id="applyPicker" class="mini" type="button">套用</button>
+              </div>
+            </div>
+            <div style="flex:1;min-width:240px;">
+              <div class="chip">描邊</div>
+              <div class="kv" style="margin-top:8px;">
+                <label>開啟描邊</label><input id="strokeEnable" type="checkbox" checked />
+                <label>描邊粗細</label><input id="strokeWidth" type="range" min="0" max="16" value="4" />
+                <label>描邊顏色</label><input id="strokeColor" type="color" value="#ffffff" />
+                <label>描邊不透明度</label><input id="strokeOpacity" type="range" min="0" max="100" value="80" />
+              </div>
             </div>
           </div>
-          <div style="flex:1;min-width:240px;">
-            <div class="chip">描邊</div>
-            <div class="kv" style="margin-top:8px;">
-              <label>開啟描邊</label><input id="strokeEnable" type="checkbox" checked />
-              <label>描邊粗細</label><input id="strokeWidth" type="range" min="0" max="16" value="4" />
-              <label>描邊顏色</label><input id="strokeColor" type="color" value="#ffffff" />
-              <label>描邊不透明度</label><input id="strokeOpacity" type="range" min="0" max="100" value="80" />
-            </div>
-          </div>
+          <div class="hint">色票從「第一張原圖」擷取主色。</div>
         </div>
-        <div class="hint">色票從「第一張原圖」擷取主色。</div>
       </details>
 
       <!-- 5b. 普通 -->
-      <details class="section" id="normalPanel" style="display:none;">
-        <summary class="title">進階：普通浮水印黑白灰</summary>
+      <div class="section" id="normalPanel" style="display:none;">
+        <div class="title">4) 普通浮水印：黑白灰</div>
         <div class="chip">顏色</div>
         <div class="swatches" id="normalSwatches" style="margin-top:8px;"></div>
         <div class="hint">普通模式只提供黑/白/灰 + 不透明度。</div>
-      </details>
-
-      <!-- 6. 文字浮水印 ★ 新功能 -->
-      <div class="text-wm-section">
-        <div class="title">4) 文字浮水印</div>
-
-        <!-- 範本列 -->
-        <div style="margin-bottom:10px;">
-          <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px;">已存範本</div>
-          <div id="presetBar" class="preset-bar"><span class="no-presets">尚無範本</span></div>
-        </div>
-
-        <div class="kv" style="margin-bottom:10px;">
-          <label>啟用文字浮水印</label>
-          <input id="textWmEnable" type="checkbox" />
-        </div>
-
-        <div id="textWmBody">
-          <div class="kv">
-            <label>文字內容</label>
-            <input id="textWmContent" type="text" class="text-input" placeholder="例如：© 阿梅 nijisanda" />
-
-            <label>字型</label>
-            <select id="textWmFont" class="font-sel">
-              <option value="ui-sans-serif,system-ui,sans-serif">系統黑體</option>
-              <option value="'PingFang TC','Microsoft JhengHei',sans-serif">黑體（中文）</option>
-              <option value="Georgia,serif">Georgia</option>
-              <option value="'Courier New',monospace">Courier New</option>
-              <option value="Arial,sans-serif">Arial</option>
-            </select>
-
-            <label>字型大小（px）</label>
-            <input id="textWmSize" type="number" min="8" max="300" value="32" style="width:90px;" />
-
-            <label>文字顏色</label>
-            <div class="row" style="gap:8px;">
-              <input id="textWmColor" type="color" value="#ffffff" />
-              <span style="font-size:12px;color:var(--muted);">不透明度</span>
-              <input id="textWmOpacity" type="range" min="0" max="100" value="70" style="flex:1;min-width:80px;" />
-            </div>
-
-            <label>描邊</label>
-            <div class="row" style="gap:8px;">
-              <input id="textWmStrokeEnable" type="checkbox" checked />
-              <input id="textWmStrokeColor" type="color" value="#000000" />
-              <span style="font-size:12px;color:var(--muted);">粗細</span>
-              <input id="textWmStrokeWidth" type="range" min="0" max="12" value="3" style="flex:1;min-width:60px;" />
-            </div>
-
-            <label>位置（九宮格）</label>
-            <select id="textWmPos">
-              <option value="TL">左上</option><option value="TC">上中</option><option value="TR">右上</option>
-              <option value="CL">左中</option><option value="CC">正中</option><option value="CR">右中</option>
-              <option value="BL">左下</option><option value="BC">下中</option><option value="BR" selected>右下</option>
-            </select>
-
-            <label>邊距（px）</label>
-            <input id="textWmMargin" type="number" min="0" value="24" style="width:90px;" />
-          </div>
-
-          <!-- 存範本 -->
-          <div class="row" style="margin-top:12px;gap:8px;">
-            <input id="presetNameInput" type="text" class="text-input" placeholder="範本名稱（例如：委託版）" style="flex:1;min-width:120px;" />
-            <button id="savePresetBtn" type="button" class="accent mini">存成範本</button>
-          </div>
-          <div class="hint">範本會記住：文字、字型、大小、顏色、不透明度、描邊、位置、邊距。</div>
-        </div>
       </div>
+
+      <!-- 6. 文字浮水印（摺疊） -->
+      <details class="text-wm-section" style="padding:0;">
+        <summary style="list-style:none;cursor:pointer;padding:12px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:900;color:rgba(0,0,0,.75);user-select:none;">
+          5) 文字浮水印
+          <span style="font-size:12px;color:rgba(0,0,0,.35);">▸</span>
+        </summary>
+        <div class="acc-body" style="padding:0 12px 12px;">
+
+          <!-- 範本列 -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px;">已存範本</div>
+            <div id="presetBar" class="preset-bar"><span class="no-presets">尚無範本</span></div>
+          </div>
+
+          <div class="kv" style="margin-bottom:10px;">
+            <label>啟用文字浮水印</label>
+            <input id="textWmEnable" type="checkbox" />
+          </div>
+
+          <div id="textWmBody">
+            <div class="kv">
+              <label>文字內容</label>
+              <input id="textWmContent" type="text" class="text-input" placeholder="例如：© 阿梅 nijisanda" />
+
+              <label>字型</label>
+              <select id="textWmFont" class="font-sel">
+                <option value="ui-sans-serif,system-ui,sans-serif">系統黑體</option>
+                <option value="'PingFang TC','Microsoft JhengHei',sans-serif">黑體（中文）</option>
+                <option value="Georgia,serif">Georgia</option>
+                <option value="'Courier New',monospace">Courier New</option>
+                <option value="Arial,sans-serif">Arial</option>
+              </select>
+
+              <label>字型大小（px）</label>
+              <input id="textWmSize" type="number" min="8" max="300" value="32" style="width:90px;" />
+
+              <label>文字顏色</label>
+              <div class="row" style="gap:8px;">
+                <input id="textWmColor" type="color" value="#ffffff" />
+                <span style="font-size:12px;color:var(--muted);">不透明度</span>
+                <input id="textWmOpacity" type="range" min="0" max="100" value="70" style="flex:1;min-width:80px;" />
+              </div>
+
+              <label>描邊</label>
+              <div class="row" style="gap:8px;">
+                <input id="textWmStrokeEnable" type="checkbox" checked />
+                <input id="textWmStrokeColor" type="color" value="#000000" />
+                <span style="font-size:12px;color:var(--muted);">粗細</span>
+                <input id="textWmStrokeWidth" type="range" min="0" max="12" value="3" style="flex:1;min-width:60px;" />
+              </div>
+
+              <label>位置（九宮格）</label>
+              <select id="textWmPos">
+                <option value="TL">左上</option><option value="TC">上中</option><option value="TR">右上</option>
+                <option value="CL">左中</option><option value="CC">正中</option><option value="CR">右中</option>
+                <option value="BL">左下</option><option value="BC">下中</option><option value="BR" selected>右下</option>
+              </select>
+
+              <label>邊距（px）</label>
+              <input id="textWmMargin" type="number" min="0" value="24" style="width:90px;" />
+            </div>
+
+            <!-- 存範本 -->
+            <div class="row" style="margin-top:12px;gap:8px;">
+              <input id="presetNameInput" type="text" class="text-input" placeholder="範本名稱（例如：委託版）" style="flex:1;min-width:120px;" />
+              <button id="savePresetBtn" type="button" class="accent mini">存成範本</button>
+            </div>
+            <div class="hint">範本會記住：文字、字型、大小、顏色、不透明度、描邊、位置、邊距。</div>
+          </div>
+        </div>
+      </details>
 
       <!-- 7. 輸出 -->
       <div class="section">
-        <div class="title">5) 輸出</div>
+        <div class="title">6) 輸出</div>
         <div class="row">
           <button id="downloadOne" class="primary" type="button">下載目前這張</button>
           <button id="downloadAll" type="button">批次下載全部</button>
           <button id="resetBtn" class="danger mini" type="button">重置圖片浮水印位置</button>
-          <span class="quick-note">JPG ≤ 5MB</span>
         </div>
-        <div class="hint">JPG 會自動嘗試壓到 5MB 以內；批次下載可能會詢問是否允許多檔下載。</div>
+
+        <div class="compress-box">
+          <label><input id="compressEnable" type="checkbox" checked /> 自動壓縮至</label>
+          <input id="compressMaxMB" type="number" min="0.5" step="0.5" value="5" />
+          <span style="color:var(--muted);">MB 以內（JPG）</span>
+        </div>
+
+        <div class="hint">批次下載會連續觸發多個下載（瀏覽器可能會問是否允許多檔下載）。</div>
       </div>
 
       <div class="warn">
-        ⭐ 常用設定已簡化；進階項目可展開。下載 JPG 會自動嘗試壓到 5MB 以內，但極端大圖可能會降低品質或縮尺寸。
+        ⭐ 圖片浮水印可按「存成內建」記在你的瀏覽器；文字浮水印範本也是存在同一個瀏覽器。
       </div>
     </div>
   </div>
@@ -602,10 +602,6 @@ const resetBtn=document.getElementById('resetBtn');
 const fitBtn=document.getElementById('fitBtn');
 const centerBtn=document.getElementById('centerBtn');
 const textWmEnableEl=document.getElementById('textWmEnable');
-function updateTextWmBodyVisibility(){
-  const body=document.getElementById('textWmBody');
-  if(body) body.style.display=textWmEnableEl.checked ? '' : 'none';
-}
 
 function setStatus(msg){ statusEl.textContent=msg||''; }
 
@@ -889,57 +885,58 @@ function draw(){
  document.getElementById('textWmSize'),document.getElementById('textWmColor'),document.getElementById('textWmOpacity'),
  document.getElementById('textWmStrokeEnable'),document.getElementById('textWmStrokeColor'),document.getElementById('textWmStrokeWidth'),
  document.getElementById('textWmPos'),document.getElementById('textWmMargin')
-].forEach(el=>el.addEventListener('input',()=>{updateTextWmBodyVisibility();saveCurrentItemSettings();draw();}));
+].forEach(el=>el.addEventListener('input',()=>{saveCurrentItemSettings();draw();}));
 
 applyPickerBtn.addEventListener('click',()=>{ formalColor=formalPicker.value; clearSwatchSelected(formalSwatchesEl); saveCurrentItemSettings(); draw(); });
 
 /* ── Downloads ── */
-const MAX_JPG_BYTES = 5 * 1024 * 1024;
+function downloadDataUrl(dataUrl,filename){ const a=document.createElement('a'); a.href=dataUrl; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); }
 
-function canvasToBlob(canvasEl, mime='image/jpeg', quality=.92){
-  return new Promise(resolve=>canvasEl.toBlob(resolve, mime, quality));
-}
-
-function cloneCanvasScaled(srcCanvas, scale){
-  const c=document.createElement('canvas');
-  c.width=Math.max(1, Math.round(srcCanvas.width*scale));
-  c.height=Math.max(1, Math.round(srcCanvas.height*scale));
-  const cctx=c.getContext('2d');
-  cctx.drawImage(srcCanvas,0,0,c.width,c.height);
-  return c;
-}
-
-async function canvasToJpegUnderLimit(srcCanvas, maxBytes=MAX_JPG_BYTES){
-  const qualities=[.92,.86,.80,.74,.68,.62,.56,.50,.44,.38,.32,.28];
-  let work=srcCanvas;
-  let scale=1;
-  let smallest=null;
-
-  for(let round=0; round<7; round++){
-    for(const q of qualities){
-      const blob=await canvasToBlob(work,'image/jpeg',q);
-      if(!blob) continue;
-      if(!smallest || blob.size < smallest.blob.size) smallest={blob,quality:q,scale};
-      if(blob.size <= maxBytes) return {blob,quality:q,scale,limited:false};
-    }
-    scale *= .88;
-    work = cloneCanvasScaled(srcCanvas, scale);
-  }
-  return {...smallest, limited:true};
-}
-
-function downloadBlob(blob, filename){
+function downloadBlob(blob,filename){
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 
-function fmtMB(bytes){ return (bytes/1024/1024).toFixed(2)+'MB'; }
+function canvasToBlob(cv,mime,quality){
+  return new Promise(resolve=>cv.toBlob(resolve,mime,quality));
+}
+
+/* 將 canvas 壓成 JPG，控制在 maxBytes 以內。
+   策略：先降 quality（0.92→0.4），不夠再縮小尺寸重畫一次，重複降 quality。 */
+async function compressCanvasToJpeg(sourceCanvas, maxBytes){
+  let workCanvas = sourceCanvas;
+  let quality = 0.92;
+  const minQuality = 0.4;
+  const qualityStep = 0.08;
+
+  for(let attempt=0; attempt<14; attempt++){
+    const blob = await canvasToBlob(workCanvas,'image/jpeg',quality);
+    if(blob && blob.size<=maxBytes) return blob;
+
+    if(quality>minQuality){
+      quality=Math.max(minQuality,quality-qualityStep);
+    }else{
+      // 品質已到下限，改縮小尺寸（寬高各縮 85%），品質回升到 0.8 重來
+      const newW=Math.round(workCanvas.width*0.85);
+      const newH=Math.round(workCanvas.height*0.85);
+      if(newW<400||newH<400) return blob; // 不再縮小，回傳目前最佳結果
+      const shrunk=document.createElement('canvas');
+      shrunk.width=newW; shrunk.height=newH;
+      shrunk.getContext('2d').drawImage(workCanvas,0,0,newW,newH);
+      workCanvas=shrunk;
+      quality=0.8;
+    }
+  }
+  // 保底：回傳最後一次嘗試
+  return await canvasToBlob(workCanvas,'image/jpeg',minQuality);
+}
+
+function getCompressSettings(){
+  const enabled=document.getElementById('compressEnable').checked;
+  const maxMB=Number(document.getElementById('compressMaxMB').value||5);
+  return{ enabled, maxBytes: Math.max(0.5,maxMB)*1024*1024 };
+}
 
 function renderFullSize(baseImg,wmImg,modeFor,opts,textWmOpts){
   const out=document.createElement('canvas'); out.width=baseImg.width; out.height=baseImg.height;
@@ -1010,44 +1007,60 @@ downloadOneBtn.addEventListener('click', async ()=>{
   const modeUsed=s.mode||mode;
   const wm=(modeUsed==='formal'?wmFormalImg:wmNormalImg);
   if(!wm&&!textWmEnableEl.checked){setStatus('沒有浮水印（圖片或文字擇一）。');return;}
-  setStatus('正在產生 JPG 並壓縮到 5MB 以內…');
   const opts=buildDownloadOpts(s,modeUsed);
   const twmOpts=buildTextWmOpts();
   const out=renderFullSize(item.img,wm,modeUsed,opts,twmOpts);
   const nameBase=item.file?.name?item.file.name.replace(/\.[^.]+$/,''):`image_${activeIndex+1}`;
-  const result=await canvasToJpegUnderLimit(out);
-  downloadBlob(result.blob,'watermarked_'+nameBase+'.jpg');
-  setStatus(`已下載：${fmtMB(result.blob.size)}（品質 ${Math.round(result.quality*100)}%，縮放 ${Math.round(result.scale*100)}%）${result.limited?'；已盡量壓縮。':''}`);
+
+  const cmp=getCompressSettings();
+  downloadOneBtn.disabled=true;
+  try{
+    if(cmp.enabled){
+      setStatus('正在壓縮圖片…');
+      const blob=await compressCanvasToJpeg(out,cmp.maxBytes);
+      downloadBlob(blob,'watermarked_'+nameBase+'.jpg');
+      setStatus(`完成！檔案大小約 ${(blob.size/1024/1024).toFixed(2)} MB。`);
+    }else{
+      downloadDataUrl(out.toDataURL('image/jpeg',0.92),'watermarked_'+nameBase+'.jpg');
+      setStatus('完成（未壓縮）。');
+    }
+  }finally{ downloadOneBtn.disabled=false; }
 });
 
 downloadAllBtn.addEventListener('click', async ()=>{
   saveCurrentItemSettings(); if(!baseItems.length){setStatus('沒有原圖。');return;}
   const twmOpts=buildTextWmOpts();
-  let count=0;
-  for(let i=0;i<baseItems.length;i++){
-    const it=baseItems[i];
-    const s=it.settings||getUISettings(); const modeUsed=s.mode||mode;
-    const wm=(modeUsed==='formal'?wmFormalImg:wmNormalImg);
-    if(!wm&&!twmOpts.enabled) continue;
-    setStatus(`正在處理第 ${i+1}/${baseItems.length} 張，並壓縮到 5MB 以內…`);
-    const opts=buildDownloadOpts(s,modeUsed);
-    const out=renderFullSize(it.img,wm,modeUsed,opts,twmOpts);
-    const result=await canvasToJpegUnderLimit(out);
-    const nameBase=it.file?.name?it.file.name.replace(/\.[^.]+$/,''):`image_${i+1}`;
-    downloadBlob(result.blob,'watermarked_'+String(i+1).padStart(2,'0')+'_'+nameBase+'.jpg');
-    count++;
-    await new Promise(r=>setTimeout(r,180));
-  }
-  setStatus(`已觸發 ${count} 個下載（每張都已嘗試壓到 5MB 以內）。`);
+  const cmp=getCompressSettings();
+  downloadAllBtn.disabled=true;
+  try{
+    let done=0;
+    for(let i=0;i<baseItems.length;i++){
+      const it=baseItems[i];
+      const s=it.settings||getUISettings(); const modeUsed=s.mode||mode;
+      const wm=(modeUsed==='formal'?wmFormalImg:wmNormalImg);
+      if(!wm&&!twmOpts.enabled)continue;
+      const opts=buildDownloadOpts(s,modeUsed);
+      const out=renderFullSize(it.img,wm,modeUsed,opts,twmOpts);
+      const nameBase=it.file?.name?it.file.name.replace(/\.[^.]+$/,''):`image_${i+1}`;
+      const filename='watermarked_'+String(i+1).padStart(2,'0')+'_'+nameBase+'.jpg';
+
+      setStatus(`正在處理第 ${i+1}/${baseItems.length} 張…`);
+      if(cmp.enabled){
+        const blob=await compressCanvasToJpeg(out,cmp.maxBytes);
+        downloadBlob(blob,filename);
+      }else{
+        downloadDataUrl(out.toDataURL('image/jpeg',0.92),filename);
+      }
+      done++;
+    }
+    setStatus(`已完成 ${done} 個下載${cmp.enabled?'（已壓縮至設定大小內）':''}。`);
+  }finally{ downloadAllBtn.disabled=false; }
 });
 
 /* ── Init ── */
 tryLoadBuiltinWatermarks();
 renderPresetBar();
-textWmEnableEl.addEventListener('change',()=>{
-updateTextWmBodyVisibility();
 draw();
-});
 </script>
 </body>
 </html>
