@@ -225,6 +225,11 @@
     color:var(--text);
   }
   .backup-status button:hover{ background:#f3f4f6; }
+  .github-sync-status{
+    background:rgba(56,132,214,.10);
+    border:1px solid rgba(56,132,214,.28);
+    color:rgba(0,0,0,.70);
+  }
   .copy-btn{
     background:var(--accentSoft) !important;
     border-color:var(--accentBorder) !important;
@@ -602,6 +607,7 @@
   <div id="monthTabs" class="month-tabs"></div>
   <div id="monthIncome" class="month-income"></div>
   <div id="backupStatus" class="backup-status"></div>
+  <div id="githubSyncStatus" class="backup-status github-sync-status"></div>
   <input id="importJsonInput" type="file" accept="application/json,.json" style="display:none" onchange="importJsonFile(this.files && this.files[0])">
 
   <div class="view-switch">
@@ -744,13 +750,134 @@ function renderBackupStatus(){
   const ts = localStorage.getItem(BACKUP_TS_KEY);
   el.innerHTML = `
     💾 自動備份：${ts ? ts : "尚未備份"}
-    <button type="button" class="copy-btn" onclick="copyJsonToClipboard(this)">📋 複製 JSON</button>
-    <button type="button" onclick="pasteJsonFromClipboard()">📥 貼上 JSON</button>
+    <button type="button" class="copy-btn" onclick="copyTableForNotion(this)">📋 複製表格給 Notion</button>
     <button type="button" onclick="exportJson()">匯出 JSON</button>
     <button type="button" onclick="document.getElementById('importJsonInput').click()">讀取 JSON</button>
     <button type="button" onclick="exportPublicScheduleHtml()">匯出公開排單頁</button>
     <button type="button" class="backup-restore-btn" onclick="restoreFromBackup()">還原瀏覽器備份</button>
   `;
+  renderGithubSyncStatus();
+}
+
+const GH_CONFIG_KEY = "ame_github_sync_config_v1";
+
+function loadGithubConfig(){
+  try{ return JSON.parse(localStorage.getItem(GH_CONFIG_KEY) || "null") || {}; }
+  catch{ return {}; }
+}
+function saveGithubConfig(cfg){
+  try{ localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg)); }catch{}
+}
+
+function renderGithubSyncStatus(){
+  const el = document.getElementById("githubSyncStatus");
+  if(!el) return;
+  const cfg = loadGithubConfig();
+  const configured = !!(cfg.token && cfg.owner && cfg.repo && cfg.path);
+
+  if(!configured){
+    el.innerHTML = `
+      ☁️ GitHub 同步尚未設定
+      <button type="button" onclick="openGithubConfigDialog()">設定同步</button>
+    `;
+    return;
+  }
+
+  const pagesUrl = `https://${cfg.owner}.github.io/${cfg.repo}/${cfg.path}`;
+  el.innerHTML = `
+    ☁️ 同步至：${cfg.owner}/${cfg.repo}（${cfg.lastSyncedAt ? "上次同步 " + cfg.lastSyncedAt : "尚未同步過"}）
+    <button type="button" class="copy-btn" id="ghSyncBtn" onclick="syncScheduleToGithub(this)">☁️ 同步排單頁</button>
+    <button type="button" onclick="window.open('${pagesUrl}','_blank')">🔗 開啟網頁</button>
+    <button type="button" onclick="copyTextToClipboard('${pagesUrl}', this, '已複製連結 ✅', '複製連結')">複製連結</button>
+    <button type="button" onclick="openGithubConfigDialog()">重新設定</button>
+  `;
+}
+
+function openGithubConfigDialog(){
+  const cfg = loadGithubConfig();
+  const owner = prompt("GitHub 帳號名稱（例如 yourname）：", cfg.owner || "");
+  if(owner === null) return;
+  const repo = prompt("Repository 名稱（例如 ame-schedule，需是 public repo 並已開啟 GitHub Pages）：", cfg.repo || "");
+  if(repo === null) return;
+  const path = prompt("檔案路徑（例如 schedule.html）：", cfg.path || "schedule.html");
+  if(path === null) return;
+  const token = prompt("GitHub Personal Access Token（只會存在你的瀏覽器，不會上傳給任何人）：", cfg.token || "");
+  if(token === null) return;
+
+  saveGithubConfig({
+    owner: owner.trim(),
+    repo: repo.trim(),
+    path: path.trim().replace(/^\/+/, ""),
+    token: token.trim(),
+    lastSyncedAt: cfg.lastSyncedAt || ""
+  });
+  renderGithubSyncStatus();
+  alert("設定已儲存 ✅\n\n下一步：請確認該 repo 是 Public，並在 repo 的 Settings → Pages 啟用 GitHub Pages（Branch 選 main / root）。\n\n設定好後按「☁️ 同步排單頁」即可。");
+}
+
+async function syncScheduleToGithub(btnEl){
+  const cfg = loadGithubConfig();
+  if(!cfg.token || !cfg.owner || !cfg.repo || !cfg.path){
+    alert("尚未完成 GitHub 同步設定。");
+    openGithubConfigDialog();
+    return;
+  }
+
+  const html = buildPublicScheduleHtml();
+  const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+
+  const originalLabel = btnEl ? btnEl.textContent : "";
+  if(btnEl){ btnEl.disabled = true; btnEl.textContent = "同步中…"; }
+
+  try{
+    // 先查詢檔案目前的 sha（更新既有檔案必須帶 sha，新檔案則沒有）
+    let sha = undefined;
+    const getRes = await fetch(apiUrl, {
+      headers: {
+        "Authorization": `Bearer ${cfg.token}`,
+        "Accept": "application/vnd.github+json"
+      }
+    });
+    if(getRes.ok){
+      const getData = await getRes.json();
+      sha = getData.sha;
+    }else if(getRes.status !== 404){
+      const errText = await getRes.text();
+      throw new Error(`讀取檔案資訊失敗（${getRes.status}）：${errText}`);
+    }
+
+    // base64 編碼（要先處理中文 UTF-8）
+    const base64Content = btoa(unescape(encodeURIComponent(html)));
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${cfg.token}`,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: `更新排單頁 ${nowTsStr()}`,
+        content: base64Content,
+        sha: sha
+      })
+    });
+
+    if(!putRes.ok){
+      const errText = await putRes.text();
+      throw new Error(`同步失敗（${putRes.status}）：${errText}`);
+    }
+
+    cfg.lastSyncedAt = nowTsStr();
+    saveGithubConfig(cfg);
+    renderGithubSyncStatus();
+    alert("同步成功 ✅\n\n注意：GitHub Pages 更新通常需要等 30 秒～幾分鐘才會生效。");
+  }catch(e){
+    console.error(e);
+    alert("同步失敗：" + (e.message || "未知錯誤") + "\n\n請確認 Token 權限（需要 Contents 讀寫權限）與 repo/路徑名稱是否正確。");
+  }finally{
+    if(btnEl){ btnEl.disabled = false; btnEl.textContent = originalLabel || "☁️ 同步排單頁"; }
+  }
 }
 
 function restoreFromBackup(){
@@ -797,14 +924,34 @@ function exportJson(){
   downloadTextFile(`ame_commissions_backup_${stamp}.json`, JSON.stringify(buildJsonPayload(), null, 2));
 }
 
-async function copyJsonToClipboard(btnEl){
-  const text = JSON.stringify(buildJsonPayload(), null, 2);
-  const originalLabel = btnEl ? btnEl.textContent : "";
+function escapeForTsv(val){
+  // TSV 不能有 Tab 或換行，會打斷欄位，全部換成空格
+  return String(val ?? "").replace(/\t/g, " ").replace(/\r?\n/g, " ").trim();
+}
+
+function copyTableForNotion(btnEl){
+  const header = ["委託人", "項目", "開工日", "DDL截稿日", "付款狀態", "備註", "完成狀態"];
+  const rows = getRenderOrder().map(i => {
+    const r = data[i];
+    return [
+      r.name,
+      r.item,
+      r.start,
+      r.ddl,
+      r.pay,
+      r.note,
+      r.done ? "已完成" : "進行中"
+    ].map(escapeForTsv).join("\t");
+  });
+  const text = [header.join("\t"), ...rows].join("\n");
+  copyTextToClipboard(text, btnEl, "已複製 ✅", "📋 複製表格給 Notion");
+}
+
+async function copyTextToClipboard(text, btnEl, successLabel, resetLabel){
   try{
     if(navigator.clipboard && navigator.clipboard.writeText){
       await navigator.clipboard.writeText(text);
     }else{
-      // 後備方案：在不支援 Clipboard API 的環境（例如非 https）手動選取複製
       const ta = document.createElement("textarea");
       ta.value = text;
       ta.style.position = "fixed";
@@ -816,18 +963,19 @@ async function copyJsonToClipboard(btnEl){
       document.body.removeChild(ta);
     }
     if(btnEl){
-      btnEl.textContent = "已複製 ✅";
+      const original = resetLabel || btnEl.textContent;
+      btnEl.textContent = successLabel || "已複製 ✅";
       btnEl.disabled = true;
-      setTimeout(()=>{ btnEl.textContent = originalLabel || "📋 複製 JSON"; btnEl.disabled = false; }, 1600);
+      setTimeout(()=>{ btnEl.textContent = original; btnEl.disabled = false; }, 1600);
     }
   }catch(e){
     console.error(e);
-    alert("複製失敗，請改用「匯出 JSON」下載檔案。");
+    alert("複製失敗，請改用「匯出 JSON」下載檔案後手動處理。");
   }
 }
 
 
-function exportPublicScheduleHtml(){
+function buildPublicScheduleHtml(){
   const rows = getRenderOrder()
     .map(i => data[i])
     .filter(r => !r.done && r.public !== false);
@@ -1199,8 +1347,13 @@ function exportPublicScheduleHtml(){
 </body>
 </html>`;
 
-  downloadHtmlFile("公開排單.html", html);
+  return html;
 }
+
+function exportPublicScheduleHtml(){
+  downloadHtmlFile("公開排單.html", buildPublicScheduleHtml());
+}
+
 function downloadHtmlFile(filename, text){
   const blob = new Blob([text], {type:"text/html;charset=utf-8"});
   const url = URL.createObjectURL(blob);
@@ -1233,38 +1386,6 @@ function normalizeImportedData(payload){
     month: x.month ?? "",
     draft: !!x.draft
   }));
-}
-
-async function pasteJsonFromClipboard(){
-  let text = "";
-  try{
-    if(navigator.clipboard && navigator.clipboard.readText){
-      text = await navigator.clipboard.readText();
-    }else{
-      alert("此瀏覽器不支援自動讀取剪貼簿，請改用「讀取 JSON」上傳檔案。");
-      return;
-    }
-  }catch(e){
-    alert("無法讀取剪貼簿內容（可能未授權）。請改用「讀取 JSON」上傳檔案。");
-    return;
-  }
-  if(!text || !text.trim()){
-    alert("剪貼簿目前是空的。");
-    return;
-  }
-  try{
-    const payload = JSON.parse(text);
-    const imported = normalizeImportedData(payload);
-    if(!confirm(`從剪貼簿讀到 ${imported.length} 筆委託。要用這份資料取代目前網站內的清單嗎？\n\n建議：匯入前可先按「匯出 JSON」備份目前資料。`)) return;
-    data = imported;
-    saveData();
-    activeMonth = loadActiveMonth();
-    safeRender();
-    alert("已從剪貼簿匯入完成 ✅");
-  }catch(e){
-    console.error(e);
-    alert("剪貼簿內容不是有效的委託清單 JSON 格式。");
-  }
 }
 
 function importJsonFile(file){
