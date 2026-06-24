@@ -254,16 +254,18 @@
 
     <div class="wmbar" aria-label="圖片浮水印設定">
       <div class="wmbar-head">
-        <div class="wmbar-title">圖片浮水印設定 <span class="wmbar-sub">建議用透明 PNG</span></div>
-        <button id="clearBuiltin" type="button" class="mini danger">清除內建</button>
+        <div class="wmbar-title">浮水印版本 <span class="wmbar-sub">建議用透明 PNG</span></div>
+        <div class="row" style="gap:6px;">
+          <button id="clearBuiltin" type="button" class="mini danger">清除全部內建</button>
+        </div>
       </div>
-      <div class="wmgrid">
-        <label>正式</label>
-        <input id="wmFormalFile" type="file" accept="image/*" />
-        <button id="saveFormalBuiltin" type="button" class="mini primary">存成內建</button>
-        <label>普通</label>
-        <input id="wmNormalFile" type="file" accept="image/*" />
-        <button id="saveNormalBuiltin" type="button" class="mini primary">存成內建</button>
+      <!-- 版本 pill 列 -->
+      <div id="wmVersionBar" class="thumbs" style="margin-top:6px;min-height:38px;align-items:center;"></div>
+      <!-- 新增版本 -->
+      <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input id="wmFormalFile" type="file" accept="image/*" style="flex:1;min-width:180px;" />
+        <input id="wmVersionName" type="text" placeholder="版本名稱（例如：貓咪版）" style="flex:1;min-width:120px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);font-size:12px;font-family:inherit;" />
+        <button id="saveWmVersion" type="button" class="mini primary">儲存為版本</button>
       </div>
     </div>
   </div>
@@ -302,17 +304,10 @@
         <div class="hint">可分次上傳，圖片會追加進清單。</div>
       </div>
 
-      <!-- 2+3. 模式 + 圖片浮水印：位置 / 大小（摺疊，高優先級） -->
+      <!-- 2. 圖片浮水印：位置 / 大小（摺疊，高優先級） -->
       <details class="section acc-priority" open>
-        <summary>2) 模式 / 位置 / 大小</summary>
+        <summary>2) 位置 / 大小</summary>
         <div class="acc-body">
-          <div class="kv" style="margin-bottom:4px;">
-            <label>浮水印模式</label>
-            <div class="toggle">
-              <button id="modeFormal" class="active" type="button">正式</button>
-              <button id="modeNormal" type="button">普通</button>
-            </div>
-          </div>
           <div class="kv">
             <label>九宮格</label>
             <select id="posGrid">
@@ -325,7 +320,7 @@
             <label>拖拉定位</label>
             <div class="row">
               <input id="dragEnable" type="checkbox" />
-              <span style="font-size:12px;color:var(--muted);">正式模式可在預覽上拖浮水印</span>
+              <span style="font-size:12px;color:var(--muted);">勾選後可在預覽上拖曳浮水印</span>
             </div>
             <label>浮水印寬度（%）</label>
             <input id="wmScale" type="range" min="5" max="80" value="18" />
@@ -335,9 +330,9 @@
         </div>
       </details>
 
-      <!-- 5. 正式上色（摺疊，次優先） -->
+      <!-- 3. 上色 / 描邊（摺疊，次優先） -->
       <details class="section acc-secondary" id="formalPanel">
-        <summary>4) 正式浮水印：上色 / 描邊</summary>
+        <summary>3) 上色 / 描邊</summary>
         <div class="acc-body">
           <div class="row" style="justify-content:space-between;gap:12px;">
             <div style="min-width:220px;">
@@ -363,15 +358,7 @@
         </div>
       </details>
 
-      <!-- 5b. 普通 -->
-      <div class="section" id="normalPanel" style="display:none;">
-        <div class="title">4) 普通浮水印：黑白灰</div>
-        <div class="chip">顏色</div>
-        <div class="swatches" id="normalSwatches" style="margin-top:8px;"></div>
-        <div class="hint">普通模式只提供黑/白/灰 + 不透明度。</div>
-      </div>
-
-      <!-- 6. 文字浮水印（摺疊，附加功能） -->
+      <!-- 4. 文字浮水印（摺疊，附加功能） -->
       <details class="text-wm-section acc-text" style="padding:0;">
         <summary class="text-wm-summary">
           5) 文字浮水印
@@ -443,7 +430,7 @@
         </div>
       </details>
 
-      <!-- 7. 輸出 -->
+      <!-- 6. 輸出 -->
       <div class="section">
         <div class="title">6) 輸出</div>
         <div class="row">
@@ -500,9 +487,73 @@ function extractPalette(img,count=8){
 /* ── Image loading ── */
 function fileToImage(file){ return new Promise((resolve,reject)=>{ const url=URL.createObjectURL(file); const img=new Image(); img.onload=()=>{URL.revokeObjectURL(url);resolve(img);}; img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('圖片載入失敗'));}; img.src=url; }); }
 
-/* ── Built-in WM ── */
-const BUILTIN_FORMAL_KEY='ame_builtin_wm_formal_v3';
-const BUILTIN_NORMAL_KEY='ame_builtin_wm_normal_v3';
+/* ── Built-in WM（多版本） ── */
+const BUILTIN_WM_VERSIONS_KEY = 'ame_builtin_wm_versions_v1';
+
+function loadWmVersions(){
+  try{ return JSON.parse(localStorage.getItem(BUILTIN_WM_VERSIONS_KEY)||'[]'); }catch{ return []; }
+}
+function saveWmVersions(arr){
+  try{ localStorage.setItem(BUILTIN_WM_VERSIONS_KEY, JSON.stringify(arr)); }catch{ setStatus('儲存失敗：版本圖片可能太大。'); }
+}
+
+// 目前使用中的浮水印 Image 物件（由版本列切換決定）
+let wmFormalImg = null;      // 目前選中版本的 Image
+let activeWmVersionIndex = -1; // -1 = 尚未選
+
+function renderWmVersionBar(){
+  const bar = document.getElementById('wmVersionBar');
+  if(!bar) return;
+  const versions = loadWmVersions();
+  bar.innerHTML = '';
+  if(!versions.length){
+    const hint = document.createElement('span');
+    hint.style.cssText = 'font-size:12px;color:var(--muted);';
+    hint.textContent = '尚無版本，上傳圖片後按「儲存為版本」。';
+    bar.appendChild(hint);
+    return;
+  }
+  versions.forEach((v, i)=>{
+    const wrap = document.createElement('div'); wrap.className = 'pillwrap';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pillbtn' + (i === activeWmVersionIndex ? ' active' : '');
+    btn.textContent = v.name;
+    btn.addEventListener('click', async ()=>{
+      activeWmVersionIndex = (activeWmVersionIndex === i) ? -1 : i;
+      if(activeWmVersionIndex === i){
+        try{ wmFormalImg = await dataURLToImage(v.dataURL); setStatus(`已切換到浮水印版本：${v.name}`); }
+        catch{ wmFormalImg = null; setStatus(`版本「${v.name}」載入失敗。`); }
+      } else {
+        wmFormalImg = null;
+        setStatus('已取消選取浮水印版本。');
+      }
+      saveCurrentItemSettings(); renderWmVersionBar(); draw();
+    });
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'pilldel'; del.title = '刪除此版本'; del.textContent = '×';
+    del.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const arr = loadWmVersions(); arr.splice(i, 1); saveWmVersions(arr);
+      if(activeWmVersionIndex === i){ wmFormalImg = null; activeWmVersionIndex = -1; draw(); }
+      else if(activeWmVersionIndex > i) activeWmVersionIndex--;
+      renderWmVersionBar();
+    });
+    wrap.appendChild(btn); wrap.appendChild(del); bar.appendChild(wrap);
+  });
+}
+
+async function tryLoadBuiltinWatermarks(){
+  const versions = loadWmVersions();
+  if(!versions.length){ setStatus('提示：上傳浮水印後按「儲存為版本」，下次自動記住。'); draw(); return; }
+  // 自動選第一個版本
+  try{
+    activeWmVersionIndex = 0;
+    wmFormalImg = await dataURLToImage(versions[0].dataURL);
+    setStatus(`已自動載入浮水印版本：${versions[0].name}`);
+  }catch{ wmFormalImg = null; }
+  renderWmVersionBar(); draw();
+}
 
 /* ── Text WM Presets ── */
 const TEXT_PRESETS_KEY='ame_text_wm_presets_v1';
@@ -610,23 +661,16 @@ const ctx=canvas.getContext('2d');
 const baseFilesEl=document.getElementById('baseFiles');
 const clearBaseListBtn=document.getElementById('clearBaseList');
 const wmFormalFileEl=document.getElementById('wmFormalFile');
-const wmNormalFileEl=document.getElementById('wmNormalFile');
 const thumbsEl=document.getElementById('thumbs');
 const statusEl=document.getElementById('status');
-const saveFormalBuiltinBtn=document.getElementById('saveFormalBuiltin');
-const saveNormalBuiltinBtn=document.getElementById('saveNormalBuiltin');
 const clearBuiltinBtn=document.getElementById('clearBuiltin');
-const modeFormalBtn=document.getElementById('modeFormal');
-const modeNormalBtn=document.getElementById('modeNormal');
 const formalPanel=document.getElementById('formalPanel');
-const normalPanel=document.getElementById('normalPanel');
 const posGridEl=document.getElementById('posGrid');
 const marginEl=document.getElementById('margin');
 const dragEnableEl=document.getElementById('dragEnable');
 const wmScaleEl=document.getElementById('wmScale');
 const wmOpacityEl=document.getElementById('wmOpacity');
 const formalSwatchesEl=document.getElementById('formalSwatches');
-const normalSwatchesEl=document.getElementById('normalSwatches');
 const formalPicker=document.getElementById('formalColorPicker');
 const applyPickerBtn=document.getElementById('applyPicker');
 const strokeEnableEl=document.getElementById('strokeEnable');
@@ -650,44 +694,38 @@ function addSwatch(container,color,onPick){
   container.appendChild(div); return div;
 }
 function initSwatches(){
-  formalSwatchesEl.innerHTML=''; normalSwatchesEl.innerHTML='';
+  formalSwatchesEl.innerHTML='';
   ['#000000','#ffffff','#808080','#111111','#e0e0e0'].forEach(c=>addSwatch(formalSwatchesEl,c,(col)=>{formalColor=col;}));
-  ['#000000','#ffffff','#808080'].forEach(c=>addSwatch(normalSwatchesEl,c,(col)=>{normalColor=col;}));
   const ff=formalSwatchesEl.querySelector('.swatch'); if(ff)ff.classList.add('selected');
-  const fn=normalSwatchesEl.querySelector('.swatch'); if(fn)fn.classList.add('selected');
 }
 
 /* ── State ── */
 let baseItems=[]; let activeIndex=0;
-let wmFormalImg=null; let wmNormalImg=null;
-let mode='formal';
-let formalColor='#111111'; let normalColor='#111111';
+let formalColor='#111111';
 let drag={isDown:false,x:0,y:0,ox:0,oy:0,hasManual:false};
 initSwatches();
 
 /* ── Per-image settings ── */
 function getUISettings(){
   return{
-    mode,canvasW:canvas.width,canvasH:canvas.height,
+    canvasW:canvas.width,canvasH:canvas.height,
     grid:posGridEl.value,marginPx:Number(marginEl.value||0),
     dragEnable:!!dragEnableEl.checked,
     scalePct:Number(wmScaleEl.value),opacity:Number(wmOpacityEl.value)/100,
-    formalColor,normalColor,
+    formalColor,
     strokeEnable:!!strokeEnableEl.checked,strokeWidth:Number(strokeWidthEl.value),
     strokeColor:strokeColorEl.value,strokeOpacity:Number(strokeOpacityEl.value)/100,
-    manual:{enabled:(mode==='formal'&&dragEnableEl.checked&&drag.hasManual),x:drag.x,y:drag.y,hasManual:!!drag.hasManual}
+    manual:{enabled:(dragEnableEl.checked&&drag.hasManual),x:drag.x,y:drag.y,hasManual:!!drag.hasManual}
   };
 }
 function applyUISettings(s){
   if(!s)return;
-  setMode(s.mode||'formal',{silent:true});
   if(s.canvasW&&s.canvasH){canvas.width=s.canvasW;canvas.height=s.canvasH;}
   if(s.grid)posGridEl.value=s.grid;
   if(Number.isFinite(s.marginPx))marginEl.value=s.marginPx;
   if(Number.isFinite(s.scalePct))wmScaleEl.value=s.scalePct;
   if(Number.isFinite(s.opacity))wmOpacityEl.value=Math.round(s.opacity*100);
   if(s.formalColor)formalColor=s.formalColor;
-  if(s.normalColor)normalColor=s.normalColor;
   strokeEnableEl.checked=!!s.strokeEnable;
   if(Number.isFinite(s.strokeWidth))strokeWidthEl.value=s.strokeWidth;
   if(s.strokeColor)strokeColorEl.value=s.strokeColor;
@@ -718,19 +756,49 @@ function rebuildThumbButtons(){
   });
 }
 
-/* ── Mode ── */
-function setMode(next,opts={silent:false}){
-  mode=next;
-  modeFormalBtn.classList.toggle('active',mode==='formal');
-  modeNormalBtn.classList.toggle('active',mode==='normal');
-  formalPanel.style.display=(mode==='formal')?'':'none';
-  normalPanel.style.display=(mode==='normal')?'':'none';
-  if(!opts.silent){saveCurrentItemSettings();draw();}
-}
-modeFormalBtn.addEventListener('click',()=>setMode('formal'));
-modeNormalBtn.addEventListener('click',()=>setMode('normal'));
+/* ── WM 版本儲存 ── */
+document.getElementById('saveWmVersion').addEventListener('click', async ()=>{
+  const file = wmFormalFileEl.files?.[0];
+  const name = (document.getElementById('wmVersionName').value||'').trim();
+  if(!file){ setStatus('請先選擇浮水印圖片。'); return; }
+  if(!name){ setStatus('請輸入版本名稱。'); return; }
 
-/* ── Base images ── */
+  const img = await fileToImage(file);
+  const dataURL = imageToDataURL(img);
+  const arr = loadWmVersions();
+  const existing = arr.findIndex(v=>v.name===name);
+  const entry = { name, dataURL };
+  if(existing>=0){ arr[existing]=entry; }
+  else{ arr.push(entry); }
+  saveWmVersions(arr);
+
+  // 自動切換到剛存的版本
+  activeWmVersionIndex = arr.findIndex(v=>v.name===name);
+  wmFormalImg = img;
+  renderWmVersionBar();
+  setStatus(`浮水印版本「${name}」已儲存並切換 ✅`);
+  wmFormalFileEl.value='';
+  document.getElementById('wmVersionName').value='';
+  draw();
+});
+
+/* ── WM 上傳（暫時預覽，不存版本） ── */
+wmFormalFileEl.addEventListener('change', async (e)=>{
+  const f = e.target.files?.[0]; if(!f) return;
+  wmFormalImg = await fileToImage(f);
+  activeWmVersionIndex = -1; // 不選任何版本，視為「臨時」
+  renderWmVersionBar();
+  setStatus('已載入浮水印（臨時，未存版本）。'); draw();
+});
+
+/* ── 清除全部版本 ── */
+clearBuiltinBtn.addEventListener('click',()=>{
+  if(!confirm('確定要清除全部浮水印版本嗎？')) return;
+  saveWmVersions([]);
+  wmFormalImg = null; activeWmVersionIndex = -1;
+  renderWmVersionBar(); draw();
+  setStatus('已清除全部浮水印版本 ✅');
+});
 async function loadBaseFiles(files){
   if(!files.length){setStatus('尚未選擇原圖。');draw();return;}
   setStatus('載入原圖中…');
@@ -753,25 +821,9 @@ async function loadBaseFiles(files){
 baseFilesEl.addEventListener('change',(e)=>{ loadBaseFiles([...(e.target.files||[])]); e.target.value=''; });
 clearBaseListBtn.addEventListener('click',()=>{ baseItems=[];activeIndex=0;thumbsEl.innerHTML='';resetPlacement();setStatus('已清空原圖列表 ✅');draw(); });
 
-/* ── WM uploads ── */
-wmFormalFileEl.addEventListener('change',async(e)=>{ const f=e.target.files?.[0]; if(!f){wmFormalImg=null;draw();return;} wmFormalImg=await fileToImage(f); setStatus('已載入正式浮水印。'); draw(); });
-wmNormalFileEl.addEventListener('change',async(e)=>{ const f=e.target.files?.[0]; if(!f){wmNormalImg=null;draw();return;} wmNormalImg=await fileToImage(f); setStatus('已載入普通浮水印。'); draw(); });
-
-/* ── Built-in ── */
+/* ── Image utilities ── */
 function imageToDataURL(img,mime='image/png'){ const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; c.getContext('2d').drawImage(img,0,0); return c.toDataURL(mime); }
-function dataURLToImage(dataURL){ return new Promise((resolve,reject)=>{ const img=new Image(); img.onload=()=>resolve(img); img.onerror=()=>reject(new Error('內建浮水印載入失敗')); img.src=dataURL; }); }
-
-saveFormalBuiltinBtn.addEventListener('click',()=>{ if(!wmFormalImg){setStatus('目前沒有正式浮水印可存。');return;} try{localStorage.setItem(BUILTIN_FORMAL_KEY,imageToDataURL(wmFormalImg));setStatus('已把「正式」浮水印存成內建 ✅');}catch{setStatus('儲存失敗：圖片可能太大。');} });
-saveNormalBuiltinBtn.addEventListener('click',()=>{ if(!wmNormalImg){setStatus('目前沒有普通浮水印可存。');return;} try{localStorage.setItem(BUILTIN_NORMAL_KEY,imageToDataURL(wmNormalImg));setStatus('已把「普通」浮水印存成內建 ✅');}catch{setStatus('儲存失敗：圖片可能太大。');} });
-clearBuiltinBtn.addEventListener('click',()=>{ localStorage.removeItem(BUILTIN_FORMAL_KEY); localStorage.removeItem(BUILTIN_NORMAL_KEY); setStatus('已清除內建浮水印 ✅'); });
-
-async function tryLoadBuiltinWatermarks(){
-  const formal=localStorage.getItem(BUILTIN_FORMAL_KEY); const normal=localStorage.getItem(BUILTIN_NORMAL_KEY); let loaded=false;
-  if(formal){ try{wmFormalImg=await dataURLToImage(formal);loaded=true;}catch{} }
-  if(normal){ try{wmNormalImg=await dataURLToImage(normal);loaded=true;}catch{} }
-  if(loaded)setStatus('已自動載入內建浮水印 ✅'); else setStatus('提示：可上傳浮水印後按「存成內建」，下次自動載入。');
-  draw();
-}
+function dataURLToImage(dataURL){ return new Promise((resolve,reject)=>{ const img=new Image(); img.onload=()=>resolve(img); img.onerror=()=>reject(new Error('浮水印載入失敗')); img.src=dataURL; }); }
 
 /* ── Placement ── */
 function resetPlacement(){ drag.hasManual=false; drag.x=0; drag.y=0; }
@@ -805,7 +857,7 @@ function fitCanvasToImage(){
 }
 fitBtn.addEventListener('click',()=>{fitCanvasToImage();draw();});
 centerBtn.addEventListener('click',()=>{
-  const wm=(mode==='formal'?wmFormalImg:wmNormalImg); if(!wm)return;
+  const wm=wmFormalImg; if(!wm)return;
   drag.hasManual=true;
   const wmW=(Number(wmScaleEl.value)/100)*canvas.width; const wmH=(wm.height/wm.width)*wmW;
   drag.x=(canvas.width-wmW)/2; drag.y=(canvas.height-wmH)/2;
@@ -815,17 +867,17 @@ centerBtn.addEventListener('click',()=>{
 /* ── Drag ── */
 function getMousePos(ev){ const rect=canvas.getBoundingClientRect(); return{x:(ev.clientX-rect.left)*(canvas.width/rect.width),y:(ev.clientY-rect.top)*(canvas.height/rect.height)}; }
 function computeWmRect(){
-  const wm=(mode==='formal'?wmFormalImg:wmNormalImg); const res={wmRect:{x:0,y:0,w:0,h:0}}; if(!wm)return res;
+  const wm=wmFormalImg; const res={wmRect:{x:0,y:0,w:0,h:0}}; if(!wm)return res;
   const wmW=(Number(wmScaleEl.value)/100)*canvas.width; const wmH=(wm.height/wm.width)*wmW;
   const grid=posGridEl.value; const margin=Number(marginEl.value||0);
   let pos;
-  if(mode==='formal'&&dragEnableEl.checked&&drag.hasManual)pos={x:drag.x,y:drag.y};
+  if(dragEnableEl.checked&&drag.hasManual)pos={x:drag.x,y:drag.y};
   else pos=getGridPos(canvas.width,canvas.height,wmW,wmH,grid,margin);
   pos.x=clamp(pos.x,margin,canvas.width-wmW-margin); pos.y=clamp(pos.y,margin,canvas.height-wmH-margin);
   res.wmRect={x:pos.x,y:pos.y,w:wmW,h:wmH}; return res;
 }
 canvas.addEventListener('pointerdown',(e)=>{
-  if(mode!=='formal'||!dragEnableEl.checked||!wmFormalImg)return;
+  if(!dragEnableEl.checked||!wmFormalImg)return;
   const{wmRect}=computeWmRect(); const p=getMousePos(e);
   if(p.x>=wmRect.x&&p.x<=wmRect.x+wmRect.w&&p.y>=wmRect.y&&p.y<=wmRect.y+wmRect.h){
     drag.isDown=true;drag.hasManual=true;drag.ox=p.x-wmRect.x;drag.oy=p.y-wmRect.y;canvas.setPointerCapture(e.pointerId);
@@ -896,18 +948,13 @@ function draw(){
   ctx.drawImage(base,0,0,canvas.width,canvas.height);
 
   // 圖片浮水印
-  const wm=(mode==='formal'?wmFormalImg:wmNormalImg);
+  const wm = wmFormalImg;
   if(wm){
     const opacity=Number(wmOpacityEl.value)/100;
     const{wmRect}=computeWmRect();
-    if(mode==='formal'){
-      const tinted=tintImageToCanvas(wm,formalColor,1);
-      if(strokeEnableEl.checked)drawOutlined(ctx,tinted,wmRect.x,wmRect.y,wmRect.w,wmRect.h,strokeColorEl.value,Number(strokeOpacityEl.value)/100,Number(strokeWidthEl.value));
-      ctx.globalAlpha=opacity; ctx.drawImage(tinted,wmRect.x,wmRect.y,wmRect.w,wmRect.h); ctx.globalAlpha=1;
-    }else{
-      const tinted=tintImageToCanvas(wm,normalColor,1);
-      ctx.globalAlpha=opacity; ctx.drawImage(tinted,wmRect.x,wmRect.y,wmRect.w,wmRect.h); ctx.globalAlpha=1;
-    }
+    const tinted=tintImageToCanvas(wm,formalColor,1);
+    if(strokeEnableEl.checked)drawOutlined(ctx,tinted,wmRect.x,wmRect.y,wmRect.w,wmRect.h,strokeColorEl.value,Number(strokeOpacityEl.value)/100,Number(strokeWidthEl.value));
+    ctx.globalAlpha=opacity; ctx.drawImage(tinted,wmRect.x,wmRect.y,wmRect.w,wmRect.h); ctx.globalAlpha=1;
   }
 
   // 文字浮水印
@@ -975,7 +1022,7 @@ function getCompressSettings(){
   return{ enabled, maxBytes: Math.max(0.5,maxMB)*1024*1024 };
 }
 
-function renderFullSize(baseImg,wmImg,modeFor,opts,textWmOpts){
+function renderFullSize(baseImg,wmImg,opts,textWmOpts){
   const out=document.createElement('canvas'); out.width=baseImg.width; out.height=baseImg.height;
   const octx=out.getContext('2d'); octx.drawImage(baseImg,0,0,out.width,out.height);
 
@@ -983,25 +1030,20 @@ function renderFullSize(baseImg,wmImg,modeFor,opts,textWmOpts){
   if(wmImg){
     const wmW=(opts.scalePct/100)*out.width; const wmH=(wmImg.height/wmImg.width)*wmW;
     const margin=opts.marginPx; let x,y;
-    if(modeFor==='formal'&&opts.manual&&opts.manual.enabled){
+    if(opts.manual&&opts.manual.enabled){
       const rx=baseImg.width/canvas.width; const ry=baseImg.height/canvas.height;
       x=clamp(opts.manual.x*rx,margin,out.width-wmW-margin); y=clamp(opts.manual.y*ry,margin,out.height-wmH-margin);
     }else{
       const p=getGridPos(out.width,out.height,wmW,wmH,opts.grid,margin); x=p.x; y=p.y;
     }
     const opacity=opts.opacity;
-    if(modeFor==='formal'){
-      const tinted=tintImageToCanvas(wmImg,opts.color,1);
-      if(opts.strokeEnable&&opts.strokeWidth>0){
-        const steps=Math.max(8,Math.round(opts.strokeWidth*6));
-        const strokeMask=tintImageToCanvas(tinted,opts.strokeColor,opts.strokeOpacity);
-        for(let i=0;i<steps;i++){const ang=(i/steps)*Math.PI*2; octx.drawImage(strokeMask,x+Math.cos(ang)*opts.strokeWidth,y+Math.sin(ang)*opts.strokeWidth,wmW,wmH);}
-      }
-      octx.globalAlpha=opacity; octx.drawImage(tinted,x,y,wmW,wmH); octx.globalAlpha=1;
-    }else{
-      const tinted=tintImageToCanvas(wmImg,opts.color,1);
-      octx.globalAlpha=opacity; octx.drawImage(tinted,x,y,wmW,wmH); octx.globalAlpha=1;
+    const tinted=tintImageToCanvas(wmImg,opts.color,1);
+    if(opts.strokeEnable&&opts.strokeWidth>0){
+      const steps=Math.max(8,Math.round(opts.strokeWidth*6));
+      const strokeMask=tintImageToCanvas(tinted,opts.strokeColor,opts.strokeOpacity);
+      for(let i=0;i<steps;i++){const ang=(i/steps)*Math.PI*2; octx.drawImage(strokeMask,x+Math.cos(ang)*opts.strokeWidth,y+Math.sin(ang)*opts.strokeWidth,wmW,wmH);}
     }
+    octx.globalAlpha=opacity; octx.drawImage(tinted,x,y,wmW,wmH); octx.globalAlpha=1;
   }
 
   // 文字浮水印（以原圖尺寸等比例縮放字型大小）
@@ -1018,13 +1060,13 @@ function renderFullSize(baseImg,wmImg,modeFor,opts,textWmOpts){
   return out;
 }
 
-function buildDownloadOpts(s,modeUsed){
+function buildDownloadOpts(s){
   return{
     grid:s.grid||posGridEl.value,
     marginPx:Number(s.marginPx??marginEl.value??0),
     scalePct:Number(s.scalePct??wmScaleEl.value),
     opacity:Number(s.opacity??Number(wmOpacityEl.value)/100),
-    color:(modeUsed==='formal'?(s.formalColor||formalColor):(s.normalColor||normalColor)),
+    color:(s.formalColor||formalColor),
     strokeEnable:!!s.strokeEnable,
     strokeWidth:Number(s.strokeWidth??strokeWidthEl.value),
     strokeColor:s.strokeColor||strokeColorEl.value,
@@ -1041,12 +1083,11 @@ function buildTextWmOpts(){
 downloadOneBtn.addEventListener('click', async ()=>{
   const item=baseItems[activeIndex]; if(!item){setStatus('沒有原圖。');return;}
   saveCurrentItemSettings(); const s=item.settings||getUISettings();
-  const modeUsed=s.mode||mode;
-  const wm=(modeUsed==='formal'?wmFormalImg:wmNormalImg);
+  const wm=wmFormalImg;
   if(!wm&&!textWmEnableEl.checked){setStatus('沒有浮水印（圖片或文字擇一）。');return;}
-  const opts=buildDownloadOpts(s,modeUsed);
+  const opts=buildDownloadOpts(s);
   const twmOpts=buildTextWmOpts();
-  const out=renderFullSize(item.img,wm,modeUsed,opts,twmOpts);
+  const out=renderFullSize(item.img,wm,opts,twmOpts);
   const nameBase=item.file?.name?item.file.name.replace(/\.[^.]+$/,''):`image_${activeIndex+1}`;
 
   const cmp=getCompressSettings();
@@ -1073,11 +1114,11 @@ downloadAllBtn.addEventListener('click', async ()=>{
     let done=0;
     for(let i=0;i<baseItems.length;i++){
       const it=baseItems[i];
-      const s=it.settings||getUISettings(); const modeUsed=s.mode||mode;
-      const wm=(modeUsed==='formal'?wmFormalImg:wmNormalImg);
+      const s=it.settings||getUISettings();
+      const wm=wmFormalImg;
       if(!wm&&!twmOpts.enabled)continue;
-      const opts=buildDownloadOpts(s,modeUsed);
-      const out=renderFullSize(it.img,wm,modeUsed,opts,twmOpts);
+      const opts=buildDownloadOpts(s);
+      const out=renderFullSize(it.img,wm,opts,twmOpts);
       const nameBase=it.file?.name?it.file.name.replace(/\.[^.]+$/,''):`image_${i+1}`;
       const filename='watermarked_'+String(i+1).padStart(2,'0')+'_'+nameBase+'.jpg';
 
@@ -1096,6 +1137,7 @@ downloadAllBtn.addEventListener('click', async ()=>{
 
 /* ── Init ── */
 tryLoadBuiltinWatermarks();
+renderWmVersionBar();
 renderPresetBar();
 draw();
 </script>
