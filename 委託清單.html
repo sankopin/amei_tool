@@ -244,6 +244,38 @@
   }
   .backup-restore-btn:hover{ background:rgba(164,43,57,.15) !important; }
 
+  /* ── 操作欄 icon 按鈕群 ── */
+  .action-cell{ display:flex; gap:4px; align-items:center; justify-content:center; flex-wrap:nowrap; }
+  .act-btn{
+    width:28px; height:28px; border-radius:8px; border:1px solid var(--border);
+    background:#fff; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background .12s, border-color .12s, transform .05s;
+    padding:0; flex-shrink:0;
+  }
+  .act-btn:hover{ background:#f3f4f6; transform:scale(1.08); }
+  .act-btn:active{ transform:scale(.96); }
+  .act-btn.on{ background:var(--accentSoft); border-color:var(--accentBorder); }
+  .act-btn.on-done{ background:rgba(22,163,74,.10); border-color:rgba(22,163,74,.30); }
+  .act-btn.on-public{ background:rgba(56,132,214,.10); border-color:rgba(56,132,214,.30); }
+  .act-btn.del{ border-color:rgba(220,38,38,.22); background:rgba(220,38,38,.06); }
+  .act-btn.del:hover{ background:rgba(220,38,38,.13); }
+
+  /* ── 欄位摺疊 ── */
+  .col-hidden{ display:none !important; }
+
+  /* ── 欄位設定面板 ── */
+  .col-toggle-wrap{ position:relative; display:inline-block; }
+  .col-toggle-panel{
+    display:none; position:absolute; top:calc(100% + 6px); right:0;
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    box-shadow:0 10px 28px rgba(0,0,0,.10); padding:12px 14px;
+    z-index:200; min-width:180px; white-space:nowrap;
+  }
+  .col-toggle-panel.open{ display:block; }
+  .col-toggle-panel .panel-title{ font-size:11px; font-weight:900; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:8px; }
+  .col-toggle-row{ display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13px; cursor:pointer; }
+  .col-toggle-row input{ width:15px; height:15px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
+
   /* 視圖切換 */
   .view-switch{
     display:inline-flex;
@@ -618,41 +650,51 @@
   <div id="tableWrap" class="table-wrap">
     <table>
       <colgroup>
-        <col style="width:52px">   <!-- 順序：縮窄 -->
-        <col style="width:75px">   <!-- 委託人 -->
-        <col style="width:105px">  <!-- 聯絡 -->
-        <col style="width:88px">   <!-- 項目：縮窄 -->
-        <col style="width:105px">  <!-- 委託資料：縮窄 -->
-        <col style="width:148px">  <!-- 開工：加寬 -->
-        <col style="width:148px">  <!-- DDL：加寬 -->
-        <col style="width:76px">   <!-- 倒數 -->
-        <col style="width:100px">  <!-- 訂金：加寬 -->
-        <col style="width:110px">  <!-- 價格：加寬 -->
-        <col style="width:105px">  <!-- 付款狀態 -->
-        <col style="width:145px">  <!-- 備註 -->
-        <col style="width:60px">   <!-- 草稿 -->
-        <col style="width:60px">   <!-- 完成 -->
-        <col style="width:60px">   <!-- 公開 -->
-        <col style="width:70px">   <!-- 刪除 -->
+        <col data-col="order"   style="width:52px">
+        <col data-col="name"    style="width:80px">
+        <col data-col="contact" style="width:105px">
+        <col data-col="item"    style="width:90px">
+        <col data-col="data"    style="width:105px">
+        <col data-col="start"   style="width:130px">
+        <col data-col="ddl"     style="width:130px">
+        <col data-col="deposit" style="width:90px">
+        <col data-col="price"   style="width:90px">
+        <col data-col="pay"     style="width:105px">
+        <col data-col="note"    style="width:145px">
+        <col data-col="actions" style="width:110px">
       </colgroup>
       <thead>
         <tr>
-          <th class="col-narrow-center">順序</th>
-          <th>委託人</th>
-          <th class="col-contact">聯絡</th>
-          <th>項目</th>
-          <th class="col-data">委託資料</th>
-          <th>開工</th>
-          <th>DDL</th>
-          <th class="col-days">倒數</th>
-          <th>訂金</th>
-          <th>價格</th>
-          <th class="col-pay">付款狀態</th>
-          <th>備註</th>
-          <th class="col-narrow-center">草稿</th>
-          <th class="col-narrow-center">完成</th>
-          <th class="col-narrow-center">公開</th>
-          <th class="col-narrow-center">刪除</th>
+          <th data-col="order"   class="col-narrow-center">順序</th>
+          <th data-col="name">委託人</th>
+          <th data-col="contact" class="col-contact">聯絡</th>
+          <th data-col="item">項目</th>
+          <th data-col="data"    class="col-data">委託資料</th>
+          <th data-col="start">開工</th>
+          <th data-col="ddl">DDL</th>
+          <th data-col="deposit">訂金</th>
+          <th data-col="price">價格</th>
+          <th data-col="pay"     class="col-pay">付款狀態</th>
+          <th data-col="note">備註</th>
+          <th data-col="actions" class="col-narrow-center">
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+              <span>操作</span>
+              <div class="col-toggle-wrap">
+                <button type="button" id="colToggleBtn" title="設定顯示欄位"
+                  style="width:20px;height:20px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;color:var(--muted);">⚙</button>
+                <div class="col-toggle-panel" id="colTogglePanel">
+                  <div class="panel-title">顯示欄位</div>
+                  <label class="col-toggle-row"><input type="checkbox" data-col="contact"  checked> 聯絡方式</label>
+                  <label class="col-toggle-row"><input type="checkbox" data-col="data"     checked> 委託資料</label>
+                  <label class="col-toggle-row"><input type="checkbox" data-col="start"    checked> 開工日</label>
+                  <label class="col-toggle-row"><input type="checkbox" data-col="deposit"  checked> 訂金</label>
+                  <label class="col-toggle-row"><input type="checkbox" data-col="price"    checked> 價格</label>
+                  <label class="col-toggle-row"><input type="checkbox" data-col="pay"      checked> 付款狀態</label>
+                  <label class="col-toggle-row"><input type="checkbox" data-col="note"     checked> 備註</label>
+                </div>
+              </div>
+            </div>
+          </th>
         </tr>
       </thead>
       <tbody id="list"></tbody>
@@ -1790,77 +1832,70 @@ if(viewMode === "card"){
       const dText = r.done ? "X" : ((dleft === null) ? "—" : `${dleft} 天`);
 
       tr.innerHTML = `
-         <td class="col-narrow-center">
-          <div style="display:flex; gap:3px; justify-content:center;">
-            <button class="btn-order" type="button" onclick="moveRow(${i}, -1)" title="上移">▲</button>
-            <button class="btn-order" type="button" onclick="moveRow(${i}, 1)" title="下移">▼</button>
+        <td data-col="order" class="col-narrow-center">
+          <div style="display:flex;gap:3px;justify-content:center;">
+            <button class="btn-order" type="button" onclick="moveRow(${i},-1)" title="上移">▲</button>
+            <button class="btn-order" type="button" onclick="moveRow(${i},1)"  title="下移">▼</button>
           </div>
         </td>
 
-        <td>${escapeHtml(r.name)}</td>
+        <td data-col="name">${escapeHtml(r.name)}</td>
 
-      <td class="col-contact">
-        <div class="linkrow linkrow-contact">
-          ${r.contactUrl
-            ? `<a href="${escapeAttr(r.contactUrl)}" target="_blank">${escapeHtml(r.contactType)}</a>`
-      : `<span>${escapeHtml(r.contactType)}</span>`
-          }
-          <button class="btn-edit contact-edit" type="button" onclick="editContact(${i})" title="修改聯絡">✎</button>
-  </div>
-</td>
+        <td data-col="contact" class="col-contact">
+          <div class="linkrow linkrow-contact">
+            ${r.contactUrl
+              ? `<a href="${escapeAttr(r.contactUrl)}" target="_blank">${escapeHtml(r.contactType)}</a>`
+              : `<span>${escapeHtml(r.contactType)}</span>`}
+            <button class="btn-edit contact-edit" type="button" onclick="editContact(${i})" title="修改聯絡">✎</button>
+          </div>
+        </td>
 
+        <td data-col="item">${escapeHtml(r.item)}</td>
 
-
-
-        <td>${escapeHtml(r.item)}</td>
-
-        <td class="td-wide col-data">
+        <td data-col="data" class="td-wide col-data">
           <div class="linkrow">
             ${r.dataUrl ? `<a href="${escapeAttr(r.dataUrl)}" target="_blank">開啟資料</a>` : `<span style="color:#aaa">未填</span>`}
             <button class="btn-edit contact-edit" onclick="editDataUrl(${i})">✎</button>
           </div>
         </td>
 
-<td>
-  <input class="tbl-input" type="date" value="${escapeAttr(r.start)}"
-         onchange="updateStart(${i}, this.value)">
-</td>
-<td>
-  <input class="tbl-input" type="date" value="${escapeAttr(r.ddl)}"
-         onchange="updateDDL(${i}, this.value)">
-</td>
-        <td class="col-days"><span class="pill">${dText}</span></td>
-
-        <td><input class="tbl-input" value="${escapeAttr(r.deposit)}" placeholder=""
-                   onchange="updateDeposit(${i}, this.value)"></td>
-
-        <td><input class="tbl-input" value="${escapeAttr(r.price)}" placeholder="價格"
-                   onchange="updatePrice(${i}, this.value)"></td>
-
-        <td class="col-pay">
-           <select class="${payClass(r.pay)}"
-          onchange="updatePay(${i}, this.value)">
-    ${payOptions(r.pay)}
-  </select>
+        <td data-col="start">
+          <input class="tbl-input" type="date" value="${escapeAttr(r.start)}" onchange="updateStart(${i},this.value)">
         </td>
 
-        <td><input class="tbl-note" value="${escapeAttr(r.note)}" placeholder="備註"
-                   onchange="updateNote(${i}, this.value)"></td>
-
-        <td class="col-narrow-center">
-           <input type="checkbox" ${r.draft ? "checked":""} onchange="toggleDraft(${i})">
+        <td data-col="ddl">
+          <input class="tbl-input" type="date" value="${escapeAttr(r.ddl)}" onchange="updateDDL(${i},this.value)">
         </td>
 
-        <td class="col-narrow-center">
-          <input type="checkbox" ${r.done ? "checked":""} onchange="toggleDone(${i})">
+        <td data-col="deposit">
+          <input class="tbl-input" value="${escapeAttr(r.deposit)}" placeholder="" onchange="updateDeposit(${i},this.value)">
         </td>
 
-        <td class="col-narrow-center">
-          <input type="checkbox" ${r.public !== false ? "checked":""} onchange="togglePublic(${i})">
+        <td data-col="price">
+          <input class="tbl-input" value="${escapeAttr(r.price)}" placeholder="價格" onchange="updatePrice(${i},this.value)">
         </td>
 
-        <td class="col-narrow-center">
-          <button class="btn-icon" type="button" onclick="removeRow(${i})">刪除</button>
+        <td data-col="pay" class="col-pay">
+          <select class="${payClass(r.pay)}" onchange="updatePay(${i},this.value)">
+            ${payOptions(r.pay)}
+          </select>
+        </td>
+
+        <td data-col="note">
+          <input class="tbl-note" value="${escapeAttr(r.note)}" placeholder="備註" onchange="updateNote(${i},this.value)">
+        </td>
+
+        <td data-col="actions" class="col-narrow-center">
+          <div class="action-cell">
+            <button type="button" class="act-btn ${r.draft?'on':''}"
+              onclick="toggleDraft(${i})" title="草稿">✏️</button>
+            <button type="button" class="act-btn ${r.done?'on-done':''}"
+              onclick="toggleDone(${i})" title="完成">✅</button>
+            <button type="button" class="act-btn ${r.public!==false?'on-public':''}"
+              onclick="togglePublic(${i})" title="公開排單">📢</button>
+            <button type="button" class="act-btn del"
+              onclick="removeRow(${i})" title="刪除">🗑️</button>
+          </div>
         </td>
       `;
       tbody.appendChild(tr);
@@ -1868,6 +1903,8 @@ if(viewMode === "card"){
 
     const badge = document.getElementById("sortModeBadge");
     if(badge) badge.textContent = (sortMode === "ddl") ? "依 DDL 自動排序" : "手動排序";
+    // 重新套用欄位隱藏（因為 innerHTML 重建了 DOM）
+    if(typeof applyColVisibility === 'function') applyColVisibility();
   }
 function renderCards(order){
   const wrap = document.getElementById("cardList");
@@ -1943,9 +1980,68 @@ function safeRender(){
     alert("委託清單程式有錯誤（資料還在），請開 F12 → Console 看錯誤訊息。");
   }
 }
+
+/* ── 欄位顯示/隱藏 ── */
+const COL_PREFS_KEY = 'ame_col_prefs_v1';
+// 預設全部顯示
+const COL_DEFAULTS = {contact:true,data:true,start:true,days:true,deposit:true,price:true,pay:true,note:true};
+
+function loadColPrefs(){
+  try{ return Object.assign({}, COL_DEFAULTS, JSON.parse(localStorage.getItem(COL_PREFS_KEY)||'{}')); }
+  catch{ return {...COL_DEFAULTS}; }
+}
+function saveColPrefs(prefs){
+  try{ localStorage.setItem(COL_PREFS_KEY, JSON.stringify(prefs)); }catch{}
+}
+
+function applyColVisibility(){
+  const prefs = loadColPrefs();
+  // 更新 col/th/td 的 hidden 狀態
+  document.querySelectorAll('[data-col]').forEach(el=>{
+    const col = el.getAttribute('data-col');
+    if(col in prefs){
+      el.classList.toggle('col-hidden', !prefs[col]);
+    }
+  });
+  // 同步 panel 裡的 checkbox 狀態
+  document.querySelectorAll('#colTogglePanel input[data-col]').forEach(cb=>{
+    cb.checked = prefs[cb.getAttribute('data-col')] !== false;
+  });
+}
+
+function initColToggle(){
+  const btn   = document.getElementById('colToggleBtn');
+  const panel = document.getElementById('colTogglePanel');
+  if(!btn || !panel) return;
+
+  // 開關面板
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    panel.classList.toggle('open');
+  });
+
+  // 點外面關掉
+  document.addEventListener('click', (e)=>{
+    if(!panel.contains(e.target) && e.target !== btn) panel.classList.remove('open');
+  });
+
+  // checkbox 變更
+  panel.querySelectorAll('input[data-col]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const prefs = loadColPrefs();
+      prefs[cb.getAttribute('data-col')] = cb.checked;
+      saveColPrefs(prefs);
+      applyColVisibility();
+    });
+  });
+
+  applyColVisibility();
+}
+
   activeMonth = loadActiveMonth();
   toggleContactCustom();
   safeRender();
+  initColToggle();
 
 </script>
 
