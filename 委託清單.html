@@ -793,11 +793,9 @@ function renderBackupStatus(){
   const ts = localStorage.getItem(BACKUP_TS_KEY);
   el.innerHTML = `
     💾 自動備份：${ts ? ts : "尚未備份"}
-    <button type="button" class="copy-btn" onclick="copyTableForNotion(this)">📋 複製表格給 Notion</button>
     <button type="button" class="copy-btn" onclick="syncGoogleForm(this)">📥 同步 Google 表單</button>
     <button type="button" onclick="exportJson()">匯出 JSON</button>
     <button type="button" onclick="document.getElementById('importJsonInput').click()">讀取 JSON</button>
-    <button type="button" onclick="exportPublicScheduleHtml()">匯出公開排單頁</button>
     <button type="button" class="backup-restore-btn" onclick="restoreFromBackup()">還原瀏覽器備份</button>
   `;
   renderGithubSyncStatus();
