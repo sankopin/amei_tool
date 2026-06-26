@@ -1410,13 +1410,33 @@ function downloadHtmlFile(filename, text){
 
 const GOOGLE_FORM_API_URL = "https://script.google.com/macros/s/AKfycbzAcu2D9LidrvM-VLGymB91ya7kaz0i8erbtpi05EFkACnmHX7qsP6vJLhKM5WCL6mqNQ/exec";
 
-function normalizeFormId(v, fallback){
-  const s = String(v ?? "").trim();
-  return s || fallback;
-}
-
 function cleanSheetValue(v){
   return String(v ?? "").trim();
+}
+
+function makeGoogleFormKey(row, index){
+  const timestamp = cleanSheetValue(row["時間戳記"]);
+  const name = cleanSheetValue(row["委託人暱稱"]);
+  const item = cleanSheetValue(row["委託項目"]);
+  const dataUrl = cleanSheetValue(row["委託資料（角色設定）"]);
+
+  // 用「時間戳記 + 委託人 + 項目 + 資料網址」組合成唯一 key。
+  // 比只看時間戳記安全：就算 Google 時間格式被轉換，也比較不會誤判。
+  const key = [timestamp, name, item, dataUrl].join("||").trim();
+  return key || `google-form-row-${index}`;
+}
+
+function makeExistingFormKey(r){
+  const raw = String(r.formId || "").trim();
+  if(raw) return raw;
+
+  // 舊資料如果沒有 formId，就用內容組合做備用比對。
+  return [
+    cleanSheetValue(r.formTimestamp || ""),
+    cleanSheetValue(r.name || ""),
+    cleanSheetValue(r.item || ""),
+    cleanSheetValue(r.dataUrl || "")
+  ].join("||").trim();
 }
 
 function mapGoogleFormRow(row, index){
@@ -1425,6 +1445,7 @@ function mapGoogleFormRow(row, index){
   const contactRaw = cleanSheetValue(row["聯絡方式"]);
   const item = cleanSheetValue(row["委託項目"]);
   const dataUrl = cleanSheetValue(row["委託資料（角色設定）"]);
+  const formId = makeGoogleFormKey(row, index);
 
   return {
     name,
@@ -1439,11 +1460,41 @@ function mapGoogleFormRow(row, index){
     pay: "未付款",
     note: "",
     done: false,
-    month: "",
+    // 表單匯入沒有開工日，先放進目前月份，避免跑到「未分類」看不到。
+    month: (activeMonth && activeMonth !== "未分類") ? activeMonth : currentMonthStr(),
     draft: false,
     public: true,
-    formId: normalizeFormId(timestamp, `${name}|${item}|${dataUrl}|${index}`)
+    formTimestamp: timestamp,
+    formId
   };
+}
+
+function findExistingGoogleFormRow(mapped){
+  const key = String(mapped.formId || "").trim();
+  if(key){
+    const hit = data.find(r => String(r.formId || "").trim() === key);
+    if(hit) return hit;
+  }
+
+  // 舊版曾經只用「時間戳記」當 formId，這裡保留相容，但要同時比對姓名/項目/資料，避免誤判。
+  const timestamp = String(mapped.formTimestamp || "").trim();
+  if(timestamp){
+    const legacyHit = data.find(r =>
+      String(r.formId || "").trim() === timestamp &&
+      cleanSheetValue(r.name) === cleanSheetValue(mapped.name) &&
+      cleanSheetValue(r.item) === cleanSheetValue(mapped.item) &&
+      cleanSheetValue(r.dataUrl) === cleanSheetValue(mapped.dataUrl)
+    );
+    if(legacyHit) return legacyHit;
+  }
+
+  // 最後再用可見內容比對一次，避免同一筆被重複匯入。
+  return data.find(r =>
+    cleanSheetValue(r.name) === cleanSheetValue(mapped.name) &&
+    cleanSheetValue(r.item) === cleanSheetValue(mapped.item) &&
+    cleanSheetValue(r.dataUrl) === cleanSheetValue(mapped.dataUrl) &&
+    cleanSheetValue(r.contactType) === cleanSheetValue(mapped.contactType)
+  );
 }
 
 async function syncGoogleForm(btnEl){
@@ -1454,38 +1505,59 @@ async function syncGoogleForm(btnEl){
   }
 
   try{
-    const res = await fetch(GOOGLE_FORM_API_URL, { cache: "no-store" });
+    const res = await fetch(GOOGLE_FORM_API_URL + "?t=" + Date.now(), { cache: "no-store" });
     if(!res.ok) throw new Error(`Google 表單讀取失敗（${res.status}）`);
 
     const rows = await res.json();
     if(!Array.isArray(rows)) throw new Error("Google 表單回傳格式不是陣列。");
 
-    const existed = new Set(data.map(r => String(r.formId || "")).filter(Boolean));
     let added = 0;
+    let updated = 0;
     let skipped = 0;
+    let invalid = 0;
 
     rows.forEach((row, index)=>{
       const mapped = mapGoogleFormRow(row, index);
+
       if(!mapped.name){
+        invalid++;
+        return;
+      }
+
+      const existing = findExistingGoogleFormRow(mapped);
+
+      if(existing){
+        // 如果舊版同步進來後落到「未分類」，幫它移到目前月份，避免你以為沒有匯入。
+        if((!existing.month || existing.month === "未分類") && !existing.start){
+          existing.month = mapped.month;
+          updated++;
+        }
+
+        // 補上新版 formId，之後比對會更穩。
+        if(!existing.formId || existing.formId !== mapped.formId){
+          existing.formId = mapped.formId;
+          existing.formTimestamp = mapped.formTimestamp;
+          updated++;
+        }
+
         skipped++;
         return;
       }
-      if(mapped.formId && existed.has(mapped.formId)){
-        skipped++;
-        return;
-      }
+
       data.push(mapped);
-      if(mapped.formId) existed.add(mapped.formId);
       added++;
     });
 
-    if(added > 0){
+    if(added > 0 || updated > 0){
       saveData();
-      activeMonth = loadActiveMonth();
+      if(added > 0 && activeMonth === "未分類"){
+        activeMonth = currentMonthStr();
+        localStorage.setItem(KEY_ACTIVE_MONTH, activeMonth);
+      }
       safeRender();
     }
 
-    alert(`Google 表單同步完成 ✅\n新增 ${added} 筆，略過 ${skipped} 筆。`);
+    alert(`Google 表單同步完成 ✅\n新增 ${added} 筆，更新 ${updated} 筆，略過 ${skipped} 筆，無效 ${invalid} 筆。`);
   }catch(e){
     console.error(e);
     alert("同步失敗：" + (e.message || "未知錯誤") + "\n\n請確認 Apps Script 部署權限是『任何人』，並且網址是 /exec 結尾。");
