@@ -756,7 +756,8 @@ let activeMonth = ""; // 例如 "2026-01"
         done: !!x.done,
         month: x.month ?? "",
         draft: !!x.draft,
-        public: x.public !== false
+        public: x.public !== false,
+        formId: x.formId ?? ""
       }));
     }catch(e){
       return [];
@@ -793,6 +794,7 @@ function renderBackupStatus(){
   el.innerHTML = `
     💾 自動備份：${ts ? ts : "尚未備份"}
     <button type="button" class="copy-btn" onclick="copyTableForNotion(this)">📋 複製表格給 Notion</button>
+    <button type="button" class="copy-btn" onclick="syncGoogleForm(this)">📥 同步 Google 表單</button>
     <button type="button" onclick="exportJson()">匯出 JSON</button>
     <button type="button" onclick="document.getElementById('importJsonInput').click()">讀取 JSON</button>
     <button type="button" onclick="exportPublicScheduleHtml()">匯出公開排單頁</button>
@@ -1408,6 +1410,95 @@ function downloadHtmlFile(filename, text){
   URL.revokeObjectURL(url);
 }
 
+const GOOGLE_FORM_API_URL = "https://script.google.com/macros/s/AKfycbzAcu2D9LidrvM-VLGymB91ya7kaz0i8erbtpi05EFkACnmHX7qsP6vJLhKM5WCL6mqNQ/exec";
+
+function normalizeFormId(v, fallback){
+  const s = String(v ?? "").trim();
+  return s || fallback;
+}
+
+function cleanSheetValue(v){
+  return String(v ?? "").trim();
+}
+
+function mapGoogleFormRow(row, index){
+  const timestamp = cleanSheetValue(row["時間戳記"]);
+  const name = cleanSheetValue(row["委託人暱稱"]);
+  const contactRaw = cleanSheetValue(row["聯絡方式"]);
+  const item = cleanSheetValue(row["委託項目"]);
+  const dataUrl = cleanSheetValue(row["委託資料（角色設定）"]);
+
+  return {
+    name,
+    contactType: contactRaw || "表單",
+    contactUrl: "",
+    item,
+    dataUrl,
+    start: "",
+    ddl: "",
+    deposit: "",
+    price: "",
+    pay: "未付款",
+    note: "",
+    done: false,
+    month: "",
+    draft: false,
+    public: true,
+    formId: normalizeFormId(timestamp, `${name}|${item}|${dataUrl}|${index}`)
+  };
+}
+
+async function syncGoogleForm(btnEl){
+  const originalLabel = btnEl ? btnEl.textContent : "";
+  if(btnEl){
+    btnEl.disabled = true;
+    btnEl.textContent = "同步中…";
+  }
+
+  try{
+    const res = await fetch(GOOGLE_FORM_API_URL, { cache: "no-store" });
+    if(!res.ok) throw new Error(`Google 表單讀取失敗（${res.status}）`);
+
+    const rows = await res.json();
+    if(!Array.isArray(rows)) throw new Error("Google 表單回傳格式不是陣列。");
+
+    const existed = new Set(data.map(r => String(r.formId || "")).filter(Boolean));
+    let added = 0;
+    let skipped = 0;
+
+    rows.forEach((row, index)=>{
+      const mapped = mapGoogleFormRow(row, index);
+      if(!mapped.name){
+        skipped++;
+        return;
+      }
+      if(mapped.formId && existed.has(mapped.formId)){
+        skipped++;
+        return;
+      }
+      data.push(mapped);
+      if(mapped.formId) existed.add(mapped.formId);
+      added++;
+    });
+
+    if(added > 0){
+      saveData();
+      activeMonth = loadActiveMonth();
+      safeRender();
+    }
+
+    alert(`Google 表單同步完成 ✅\n新增 ${added} 筆，略過 ${skipped} 筆。`);
+  }catch(e){
+    console.error(e);
+    alert("同步失敗：" + (e.message || "未知錯誤") + "\n\n請確認 Apps Script 部署權限是『任何人』，並且網址是 /exec 結尾。");
+  }finally{
+    if(btnEl){
+      btnEl.disabled = false;
+      btnEl.textContent = originalLabel || "📥 同步 Google 表單";
+    }
+  }
+}
+
 function normalizeImportedData(payload){
   const arr = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.data) ? payload.data : null);
   if(!arr) throw new Error("JSON 裡沒有可讀取的委託清單資料。");
@@ -1426,7 +1517,9 @@ function normalizeImportedData(payload){
     note: x.note ?? "",
     done: !!x.done,
     month: x.month ?? "",
-    draft: !!x.draft
+    draft: !!x.draft,
+    public: x.public !== false,
+    formId: x.formId ?? ""
   }));
 }
 
@@ -1759,7 +1852,8 @@ function editContact(i){
       month,
       draft:false, 
       done:false,
-      public:true
+      public:true,
+      formId:""
     });
 
     saveData();
