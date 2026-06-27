@@ -737,28 +737,76 @@ let activeMonth = ""; // 例如 "2026-01"
     try{ localStorage.setItem(SORTMODE_KEY, sortMode); }catch(e){}
   }
 
+
+function isUrlLike(v){
+  const s = String(v ?? "").trim();
+  return /^(https?:\/\/|www\.)/i.test(s);
+}
+
+function normalizeContactUrl(v){
+  const s = String(v ?? "").trim();
+  if(!s) return "";
+  if(/^www\./i.test(s)) return "https://" + s;
+  return s;
+}
+
+function inferContactTypeFromUrl(url){
+  const s = String(url ?? "").toLowerCase();
+  if(s.includes("facebook.com") || s.includes("fb.com") || s.includes("fb.me")) return "Facebook";
+  if(s.includes("plurk.com")) return "Plurk";
+  if(s.includes("threads.net")) return "Threads";
+  if(s.includes("discord.gg") || s.includes("discord.com") || s.includes("discordapp.com")) return "Discord";
+  return "表單";
+}
+
+function splitContactFields(typeValue, urlValue){
+  let type = String(typeValue ?? "").trim();
+  let url = String(urlValue ?? "").trim();
+
+  // 如果表單把網址填在「聯絡方式」欄，搬到 contactUrl，避免蓋掉顯示文字。
+  if(!url && isUrlLike(type)){
+    url = normalizeContactUrl(type);
+    type = inferContactTypeFromUrl(url);
+  }else{
+    url = normalizeContactUrl(url);
+    // 如果原本顯示文字是「表單」或空白，就依網址自動判斷平台。
+    if(url && (!type || type === "表單" || isUrlLike(type))){
+      type = inferContactTypeFromUrl(url);
+    }
+  }
+
+  return {
+    contactType: type || "表單",
+    contactUrl: url
+  };
+}
+
   function loadData(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
       const arr = raw ? JSON.parse(raw) : [];
-      return arr.map(x => ({
-        name: x.name ?? "",
-        contactType: x.contactType ?? "Facebook",
-        contactUrl: x.contactUrl ?? "",
-        item: x.item ?? "",
-        dataUrl: x.dataUrl ?? "",
-        start: x.start ?? "",
-        ddl: x.ddl ?? "",
-        deposit: x.deposit ?? "",
-        price: x.price ?? "",
-        pay: x.pay ?? "未付款",
-        note: x.note ?? "",
-        done: !!x.done,
-        month: x.month ?? "",
-        draft: !!x.draft,
-        public: x.public !== false,
-        formId: x.formId ?? ""
-      }));
+      return arr.map(x => {
+        const contact = splitContactFields(x.contactType ?? "Facebook", x.contactUrl ?? "");
+        return {
+          name: x.name ?? "",
+          contactType: contact.contactType,
+          contactUrl: contact.contactUrl,
+          item: x.item ?? "",
+          dataUrl: x.dataUrl ?? "",
+          start: x.start ?? "",
+          ddl: x.ddl ?? "",
+          deposit: x.deposit ?? "",
+          price: x.price ?? "",
+          pay: x.pay ?? "未付款",
+          note: x.note ?? "",
+          done: !!x.done,
+          month: x.month ?? "",
+          draft: !!x.draft,
+          public: x.public !== false,
+          formId: x.formId ?? "",
+          formSignature: x.formSignature ?? ""
+        };
+      });
     }catch(e){
       return [];
     }
@@ -1450,11 +1498,12 @@ function mapGoogleFormRow(row, index){
   const contactRaw = cleanSheetValue(getSheetValue(row, ["聯絡方式", "聯絡平台", "聯絡方式網址或ID"], 2));
   const item = cleanSheetValue(getSheetValue(row, ["委託項目", "項目"], 3));
   const dataUrl = cleanSheetValue(getSheetValue(row, ["委託資料（角色設定）", "委託資料", "角色設定"], 4));
+  const contact = splitContactFields("表單", contactRaw);
 
   return {
     name,
-    contactType: contactRaw || "表單",
-    contactUrl: "",
+    contactType: contact.contactType,
+    contactUrl: contact.contactUrl,
     item,
     dataUrl,
     start: "",
@@ -1529,24 +1578,28 @@ function normalizeImportedData(payload){
   const arr = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.data) ? payload.data : null);
   if(!arr) throw new Error("JSON 裡沒有可讀取的委託清單資料。");
 
-  return arr.map(x => ({
-    name: x.name ?? "",
-    contactType: x.contactType ?? "Facebook",
-    contactUrl: x.contactUrl ?? "",
-    item: x.item ?? "",
-    dataUrl: x.dataUrl ?? "",
-    start: x.start ?? "",
-    ddl: x.ddl ?? "",
-    deposit: x.deposit ?? "",
-    price: x.price ?? "",
-    pay: x.pay ?? "未付款",
-    note: x.note ?? "",
-    done: !!x.done,
-    month: x.month ?? "",
-    draft: !!x.draft,
-    public: x.public !== false,
-    formId: x.formId ?? ""
-  }));
+  return arr.map(x => {
+    const contact = splitContactFields(x.contactType ?? "Facebook", x.contactUrl ?? "");
+    return {
+      name: x.name ?? "",
+      contactType: contact.contactType,
+      contactUrl: contact.contactUrl,
+      item: x.item ?? "",
+      dataUrl: x.dataUrl ?? "",
+      start: x.start ?? "",
+      ddl: x.ddl ?? "",
+      deposit: x.deposit ?? "",
+      price: x.price ?? "",
+      pay: x.pay ?? "未付款",
+      note: x.note ?? "",
+      done: !!x.done,
+      month: x.month ?? "",
+      draft: !!x.draft,
+      public: x.public !== false,
+      formId: x.formId ?? "",
+      formSignature: x.formSignature ?? ""
+    };
+  });
 }
 
 function importJsonFile(file){
