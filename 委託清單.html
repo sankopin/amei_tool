@@ -1876,6 +1876,13 @@ function editContact(i){
   function moveRow(indexInData, dir){
     // 只要操作上下箭頭，就自動切到手動排序模式
     if(sortMode !== "manual"){
+      // 切換前，先把「目前 DDL 自動排好的順序」固化進 data 陣列，
+      // 這樣手動模式接手時是從目前看到的順序開始微調，不會整個錯開
+      const order = getRenderOrder();
+      data = order.map(idx => data[idx]);
+      // indexInData 是舊陣列的索引，固化後要重新對應到新陣列裡的位置
+      indexInData = order.indexOf(indexInData);
+
       sortMode = "manual";
       saveSortMode();
     }
