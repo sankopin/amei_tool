@@ -1874,7 +1874,11 @@ function editContact(i){
   }
 
   function moveRow(indexInData, dir){
-    if(sortMode !== "manual") return;
+    // 只要操作上下箭頭，就自動切到手動排序模式
+    if(sortMode !== "manual"){
+      sortMode = "manual";
+      saveSortMode();
+    }
 
     const isDone = data[indexInData].done;
     const group = data.map((x, idx)=>({x, idx}))
