@@ -1672,17 +1672,21 @@ function updateMonthIncome(){
     return m === activeMonth;
   });
 
-  let received = 0; // 已收（已付清）
-  let pending  = 0; // 待收（未付款 + 已付訂金）
-  let deposit  = 0; // 訂金（已付訂金）
+  let received = 0; // 已收（已付清 全額 + 已付訂金 的訂金部分）
+  let pending  = 0; // 待收（未付款 全額 + 已付訂金 的尾款部分）
+  let deposit  = 0; // 訂金小計（已付訂金 的訂金部分）
 
   rows.forEach(r=>{
-    const price = moneyToNum(r.price);
+    const price   = moneyToNum(r.price);
+    const dep     = moneyToNum(r.deposit); // 實際訂金金額
     if(r.pay === "已付清"){
       received += price;
     }else if(r.pay === "已付訂金"){
-      deposit += price;
-      pending += price;
+      const depAmt = dep > 0 ? dep : 0;       // 訂金已收
+      const tail   = price - depAmt;           // 尾款待收
+      received += depAmt;
+      pending  += tail > 0 ? tail : 0;
+      deposit  += depAmt;
     }else{ // 未付款 或空白
       pending += price;
     }
@@ -1874,18 +1878,7 @@ function editContact(i){
   }
 
   function moveRow(indexInData, dir){
-    // 只要操作上下箭頭，就自動切到手動排序模式
-    if(sortMode !== "manual"){
-      // 切換前，先把「目前 DDL 自動排好的順序」固化進 data 陣列，
-      // 這樣手動模式接手時是從目前看到的順序開始微調，不會整個錯開
-      const order = getRenderOrder();
-      data = order.map(idx => data[idx]);
-      // indexInData 是舊陣列的索引，固化後要重新對應到新陣列裡的位置
-      indexInData = order.indexOf(indexInData);
-
-      sortMode = "manual";
-      saveSortMode();
-    }
+    if(sortMode !== "manual") return;
 
     const isDone = data[indexInData].done;
     const group = data.map((x, idx)=>({x, idx}))
