@@ -1119,14 +1119,46 @@ function buildPublicScheduleHtml(){
 
   const scheduleUntil = latestDDL ? monthFromDate(latestDDL) : "未定";
 
-  const tableRowsHtml = rows.length ? rows.map((r, idx) => {
+  // ── 週次分組工具 ──
+  function getWeekGroup(ddlStr){
+    const s = String(ddlStr || "").trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "noDdl";
+    const today = new Date();
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const ddlDate = new Date(s + "T00:00:00");
+    if(ddlDate < todayDate) return "overdue";
+    const dow = todayDate.getDay();
+    const diffToMon = (dow === 0) ? -6 : 1 - dow;
+    const thisMonday = new Date(todayDate); thisMonday.setDate(todayDate.getDate() + diffToMon);
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const weekIdx = Math.floor((ddlDate - thisMonday) / weekMs);
+    if(weekIdx < 0) return "overdue";
+    if(weekIdx === 0) return "w0";
+    if(weekIdx === 1) return "w1";
+    if(weekIdx === 2) return "w2";
+    return "w3plus";
+  }
+
+  const GROUP_META = [
+    { key:"overdue", label:"⚠️ 已過期",    open:true  },
+    { key:"w0",      label:"📅 本週",       open:true  },
+    { key:"w1",      label:"📅 下週",       open:false },
+    { key:"w2",      label:"📅 下下週",     open:false },
+    { key:"w3plus",  label:"📅 三週後以上", open:false },
+    { key:"noDdl",   label:"📭 未設 DDL",  open:false },
+  ];
+
+  const groups = {};
+  GROUP_META.forEach(g => groups[g.key] = []);
+  rows.forEach((r, idx) => { groups[getWeekGroup(r.ddl)].push({ r, idx }); });
+
+  function makeRowHtml(r, idx){
     const name = publicName(r.name);
     const item = escapeHtml(r.item || "未填項目");
     const start = shortDate(r.start);
     const ddl = shortDate(r.ddl);
     const note = escapeHtml((r.note || "").trim() || "—");
     const status = publicStatus(r);
-
     return `
       <tr>
         <td class="queue-no"><span>#${String(idx + 1).padStart(2, "0")}</span></td>
@@ -1139,17 +1171,36 @@ function buildPublicScheduleHtml(){
         <td class="date-cell"><span>${escapeHtml(ddl)}</span></td>
         <td class="note-cell">${note}</td>
         <td class="status-cell"><span class="status-pill ${status.cls}">${status.icon} ${status.text}</span></td>
-      </tr>
-    `;
-  }).join("") : `
-    <tr>
-      <td colspan="7" class="empty-cell">
+      </tr>`;
+  }
+
+  const tableRowsHtml = (() => {
+    if(!rows.length) return `
+      <tr><td colspan="7" class="empty-cell">
         <div class="empty-icon">☁️</div>
         <div class="empty-title">目前沒有公開排單中的委託</div>
         <div class="empty-text">等排單更新後會顯示在這裡。</div>
-      </td>
-    </tr>
-  `;
+      </td></tr>`;
+    return GROUP_META
+      .filter(g => groups[g.key].length > 0)
+      .map(g => {
+        const items = groups[g.key];
+        const rowsHtml = items.map(({r, idx}) => makeRowHtml(r, idx)).join("");
+        return `
+          <tr class="week-group-row">
+            <td colspan="7" class="week-group-cell">
+              <details class="week-details" ${g.open ? "open" : ""}>
+                <summary class="week-summary">
+                  <span class="week-label">${g.label}</span>
+                  <span class="week-count">${items.length} 件</span>
+                  <span class="week-arrow">▸</span>
+                </summary>
+                <table class="inner-table"><tbody>${rowsHtml}</tbody></table>
+              </details>
+            </td>
+          </tr>`;
+      }).join("");
+  })();
 
   const html = `<!DOCTYPE html>
 <html lang="zh-Hant">
@@ -1159,28 +1210,26 @@ function buildPublicScheduleHtml(){
 <title>公開排單</title>
 <style>
   :root{
-    --bg:#F7FBF2;
+    --bg:#f8f7fc;
     --panel:#ffffff;
-    --border:#D7EDBF;
-    --line:rgba(144,211,90,.22);
-    --text:#445038;
-    --muted:#718064;
-    --green:#90D35A;
-    --green2:#A8DF7A;
-    --greenDark:#6FAF3E;
-    --greenDeep:#4F8F2F;
-    --greenSoft:#F1F9E8;
-    --cream:#FFFDF4;
-    --shadow:0 16px 38px rgba(87,132,45,.12);
+    --border:#e7e1f4;
+    --line:rgba(167,142,220,.20);
+    --text:rgba(0,0,0,.78);
+    --muted:rgba(0,0,0,.50);
+    --purple:rgb(139,109,216);
+    --purple2:rgb(167,142,220);
+    --purpleSoft:rgba(167,142,220,.16);
+    --green:rgb(110,180,135);
+    --greenSoft:rgba(110,180,135,.13);
+    --shadow:0 14px 36px rgba(65,45,110,.10);
   }
   *{box-sizing:border-box}
   body{
     margin:0;
     padding:38px 18px 56px;
     background:
-      radial-gradient(circle at top left, rgba(144,211,90,.25), transparent 34%),
-      radial-gradient(circle at bottom right, rgba(168,223,122,.18), transparent 32%),
-      linear-gradient(180deg, #FDFFF9 0%, var(--bg) 48%, #F4FAEE 100%);
+      radial-gradient(circle at top left, rgba(167,142,220,.24), transparent 34%),
+      linear-gradient(180deg, #fbfaff 0%, var(--bg) 42%, #f7f8fb 100%);
     color:var(--text);
     font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",Arial;
     font-size:17px;
@@ -1188,26 +1237,13 @@ function buildPublicScheduleHtml(){
   }
   .wrap{max-width:1040px;margin:0 auto;}
   .hero{
-    position:relative;
-    overflow:hidden;
     margin-bottom:18px;
     padding:24px 26px;
-    border:1px solid rgba(144,211,90,.34);
+    border:1px solid rgba(167,142,220,.28);
     border-radius:26px;
-    background:rgba(255,255,255,.86);
+    background:rgba(255,255,255,.82);
     box-shadow:var(--shadow);
     backdrop-filter: blur(10px);
-  }
-  .hero::after{
-    content:"";
-    position:absolute;
-    right:-52px;
-    top:-58px;
-    width:180px;
-    height:180px;
-    border-radius:50%;
-    background:rgba(144,211,90,.15);
-    pointer-events:none;
   }
   .eyebrow{
     display:inline-flex;
@@ -1216,9 +1252,8 @@ function buildPublicScheduleHtml(){
     margin-bottom:8px;
     padding:5px 12px;
     border-radius:999px;
-    background:var(--greenSoft);
-    border:1px solid rgba(144,211,90,.32);
-    color:var(--greenDeep);
+    background:var(--purpleSoft);
+    color:var(--purple);
     font-size:13px;
     font-weight:950;
   }
@@ -1227,7 +1262,7 @@ function buildPublicScheduleHtml(){
     font-size:32px;
     line-height:1.25;
     letter-spacing:.4px;
-    color:#3E4B34;
+    color:rgba(0,0,0,.82);
   }
   .sub{
     margin-top:10px;
@@ -1246,19 +1281,18 @@ function buildPublicScheduleHtml(){
     gap:8px;
     padding:9px 14px;
     border-radius:16px;
-    background:rgba(255,255,255,.92);
+    background:#fff;
     border:1px solid var(--border);
     font-size:15px;
     font-weight:900;
-    color:#536545;
-    box-shadow:0 6px 16px rgba(87,132,45,.06);
+    color:rgba(0,0,0,.70);
   }
   .table-card{
     overflow:hidden;
     border:1px solid var(--border);
     border-radius:24px;
-    background:rgba(255,255,255,.96);
-    box-shadow:0 12px 30px rgba(87,132,45,.09);
+    background:rgba(255,255,255,.94);
+    box-shadow:0 10px 28px rgba(65,45,110,.08);
   }
   .table-scroll{overflow-x:auto;}
   table{
@@ -1274,8 +1308,8 @@ function buildPublicScheduleHtml(){
   }
   th{
     padding:14px 16px;
-    background:#F3FAEA;
-    color:#6C7E5A;
+    background:#faf9ff;
+    color:var(--muted);
     font-size:13px;
     font-weight:950;
     letter-spacing:.3px;
@@ -1284,11 +1318,11 @@ function buildPublicScheduleHtml(){
   td{
     padding:18px 16px;
     font-size:16px;
-    color:#4E5C43;
+    color:rgba(0,0,0,.72);
   }
   tr:last-child td{border-bottom:none;}
   tbody tr{transition:background .15s ease;}
-  tbody tr:hover{background:#F6FBEF;}
+  tbody tr:hover{background:rgba(167,142,220,.08);}
   .queue-no{width:72px;text-align:center;}
   .queue-no span{
     display:inline-flex;
@@ -1296,9 +1330,8 @@ function buildPublicScheduleHtml(){
     min-width:44px;
     padding:4px 9px;
     border-radius:999px;
-    background:var(--greenSoft);
-    border:1px solid rgba(144,211,90,.32);
-    color:var(--greenDeep);
+    background:var(--purpleSoft);
+    color:var(--purple);
     font-size:13px;
     font-weight:950;
   }
@@ -1314,15 +1347,15 @@ function buildPublicScheduleHtml(){
     justify-content:center;
     margin-right:10px;
     border-radius:13px;
-    background:linear-gradient(135deg, var(--green), var(--greenDark));
+    background:linear-gradient(135deg, rgba(167,142,220,.95), rgba(139,109,216,.85));
     color:#fff;
     font-size:16px;
     font-weight:950;
-    box-shadow:0 7px 16px rgba(111,175,62,.22);
+    box-shadow:0 7px 16px rgba(139,109,216,.18);
     vertical-align:middle;
   }
   .client-name{
-    color:var(--greenDeep);
+    color:var(--purple);
     font-size:20px;
     font-weight:950;
     letter-spacing:.4px;
@@ -1330,7 +1363,7 @@ function buildPublicScheduleHtml(){
   }
   .item-cell{
     width:210px;
-    color:#3F4E34;
+    color:rgba(0,0,0,.84);
     font-size:18px;
     font-weight:950;
   }
@@ -1343,9 +1376,9 @@ function buildPublicScheduleHtml(){
     align-items:center;
     padding:6px 11px;
     border-radius:999px;
-    background:#EEF8DF;
-    border:1px solid rgba(144,211,90,.36);
-    color:#59743F;
+    background:var(--greenSoft);
+    border:1px solid rgba(110,180,135,.28);
+    color:rgba(0,0,0,.70);
     font-size:15px;
     font-weight:900;
   }
@@ -1353,7 +1386,7 @@ function buildPublicScheduleHtml(){
     min-width:220px;
     white-space:pre-wrap;
     word-break:break-word;
-    color:#607056;
+    color:rgba(0,0,0,.66);
     font-size:15px;
     font-weight:700;
     line-height:1.65;
@@ -1375,20 +1408,19 @@ function buildPublicScheduleHtml(){
     border:1px solid transparent;
   }
   .status-wait{
-    background:#F1F6EA;
-    border-color:#DDECCB;
-    color:#6D7C60;
+    background:rgba(0,0,0,.045);
+    border-color:rgba(0,0,0,.08);
+    color:rgba(0,0,0,.52);
   }
   .status-progress{
-    background:var(--green);
-    border-color:rgba(111,175,62,.42);
-    color:#fff;
-    box-shadow:0 6px 14px rgba(144,211,90,.24);
+    background:var(--purpleSoft);
+    border-color:rgba(167,142,220,.32);
+    color:var(--purple);
   }
   .status-done{
-    background:#E9F6DD;
-    border-color:rgba(111,175,62,.34);
-    color:var(--greenDeep);
+    background:var(--greenSoft);
+    border-color:rgba(110,180,135,.28);
+    color:var(--green);
   }
   .empty-cell{
     padding:46px 18px;
@@ -1396,14 +1428,38 @@ function buildPublicScheduleHtml(){
     color:var(--muted);
   }
   .empty-icon{font-size:34px;margin-bottom:8px;}
-  .empty-title{font-size:20px;font-weight:950;color:#4F5F42;}
+  .empty-title{font-size:20px;font-weight:950;color:rgba(0,0,0,.72);}
   .empty-text{margin-top:4px;font-size:15px;}
   .footer{
     margin-top:18px;
-    color:#7C8B70;
+    color:var(--muted);
     font-size:13px;
     text-align:right;
   }
+  /* ── 週次摺疊 ── */
+  .week-group-row > td{ padding:0; border-bottom:none; }
+  .week-group-cell{ padding:0 !important; }
+  .week-details{ border-bottom:1px solid var(--line); }
+  .week-details:last-child{ border-bottom:none; }
+  .week-summary{
+    display:flex; align-items:center; gap:10px;
+    padding:13px 18px; cursor:pointer; user-select:none;
+    background:#faf9ff; list-style:none; transition:background .12s;
+  }
+  .week-summary::-webkit-details-marker{ display:none; }
+  .week-summary:hover{ background:rgba(167,142,220,.10); }
+  .week-label{ font-size:14px; font-weight:950; color:var(--purple); letter-spacing:.3px; }
+  .week-count{
+    padding:3px 10px; border-radius:999px;
+    background:var(--purpleSoft); border:1px solid rgba(167,142,220,.28);
+    color:var(--purple); font-size:12px; font-weight:900;
+  }
+  .week-arrow{ margin-left:auto; font-size:12px; color:var(--muted); transition:transform .15s ease; }
+  .week-details[open] .week-arrow{ transform:rotate(90deg); }
+  .inner-table{ width:100%; border-collapse:separate; border-spacing:0; }
+  .inner-table td{ border-bottom:1px solid var(--line); }
+  .inner-table tr:last-child td{ border-bottom:none; }
+
   @media (max-width: 700px){
     body{padding:22px 12px 40px;font-size:16px;}
     .hero{padding:20px 18px;border-radius:22px;}
@@ -1414,9 +1470,10 @@ function buildPublicScheduleHtml(){
     td{padding:15px 13px;}
     .client-name{font-size:19px;}
     .item-cell{font-size:17px;}
+    .week-summary{padding:11px 14px;}
+    .week-label{font-size:13px;}
   }
 </style>
-
 </head>
 <body>
   <main class="wrap">
