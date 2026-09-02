@@ -1140,24 +1140,27 @@ function buildPublicScheduleHtml(){
   }
 
   const GROUP_META = [
-    { key:"overdue", label:"⚠️ 已過期",    open:false },
     { key:"w0",      label:"📅 本週",       open:true  },
     { key:"w1",      label:"📅 下週",       open:false },
     { key:"w2",      label:"📅 下下週",     open:false },
     { key:"w3plus",  label:"📅 三週後以上", open:false },
-    { key:"noDdl",   label:"▼ 未設 DDL",   open:false },
+    { key:"noDdl",   label:"▼ 未設開工日", open:false },
   ];
 
   const groups = {};
   GROUP_META.forEach(g => groups[g.key] = []);
-  rows.forEach((r, idx) => { groups[getWeekGroup(r.ddl)].push({ r, idx }); });
+  rows.forEach((r, idx) => {
+    let gk = getWeekGroup(r.start);
+    // 開工日已過或本週前，都算「本週」顯示
+    if(gk === "overdue") gk = "w0";
+    groups[gk].push({ r, idx });
+  });
 
   function makeRowHtml(r, idx){
     const name = publicName(r.name);
     const item = escapeHtml(r.item || "未填項目");
     const start = shortDate(r.start);
     const ddl = shortDate(r.ddl);
-    const note = escapeHtml((r.note || "").trim() || "—");
     const status = publicStatus(r);
     return `
       <tr>
@@ -1169,14 +1172,13 @@ function buildPublicScheduleHtml(){
         <td class="item-cell">${item}</td>
         <td class="date-cell"><span>${escapeHtml(start)}</span></td>
         <td class="date-cell"><span>${escapeHtml(ddl)}</span></td>
-        <td class="note-cell">${note}</td>
         <td class="status-cell"><span class="status-pill ${status.cls}">${status.icon} ${status.text}</span></td>
       </tr>`;
   }
 
   const tableRowsHtml = (() => {
     if(!rows.length) return `
-      <tr><td colspan="7" class="empty-cell">
+      <tr><td colspan="6" class="empty-cell">
         <div class="empty-icon">☁️</div>
         <div class="empty-title">目前沒有公開排單中的委託</div>
         <div class="empty-text">等排單更新後會顯示在這裡。</div>
@@ -1188,12 +1190,12 @@ function buildPublicScheduleHtml(){
         const rowsHtml = items.map(({r, idx}) => makeRowHtml(r, idx)).join("");
         return `
           <tr class="week-group-row">
-            <td colspan="7" class="week-group-cell">
+            <td colspan="6" class="week-group-cell">
               <details class="week-details" ${g.open ? "open" : ""}>
                 <summary class="week-summary">
                   <span class="week-label">${g.label}</span>
                   <span class="week-count">${items.length} 件</span>
-                  <span class="week-arrow">▸</span>
+                  <span class="week-arrow">▼</span>
                 </summary>
                 <table class="inner-table"><tbody>${rowsHtml}</tbody></table>
               </details>
@@ -1210,28 +1212,28 @@ function buildPublicScheduleHtml(){
 <title>公開排單</title>
 <style>
   :root{
-    --bg:#F7FBF2;
+    --bg:#f5f7f4;
     --panel:#ffffff;
-    --border:#D7EDBF;
-    --line:rgba(144,211,90,.22);
-    --text:#445038;
-    --muted:#718064;
-    --green:#90D35A;
-    --green2:#A8DF7A;
-    --greenDark:#6FAF3E;
-    --greenDeep:#4F8F2F;
-    --greenSoft:#F1F9E8;
-    --cream:#FFFDF4;
-    --shadow:0 16px 38px rgba(87,132,45,.12);
+    --border:#cde0c4;
+    --line:rgba(120,170,100,.16);
+    --text:#3e4a38;
+    --muted:#7a8c72;
+    --green:#7eb86a;
+    --green2:#9fcc8c;
+    --greenDark:#5e9450;
+    --greenDeep:#426b35;
+    --greenSoft:#eef5ea;
+    --cream:#fdfef9;
+    --shadow:0 14px 34px rgba(70,110,50,.09);
   }
   *{box-sizing:border-box}
   body{
     margin:0;
     padding:38px 18px 56px;
     background:
-      radial-gradient(circle at top left, rgba(144,211,90,.25), transparent 34%),
-      radial-gradient(circle at bottom right, rgba(168,223,122,.18), transparent 32%),
-      linear-gradient(180deg, #FDFFF9 0%, var(--bg) 48%, #F4FAEE 100%);
+      radial-gradient(circle at top left, rgba(120,170,100,.12), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(140,190,110,.08), transparent 32%),
+      linear-gradient(180deg, #f9faf7 0%, var(--bg) 48%, #f2f5f0 100%);
     color:var(--text);
     font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",Arial;
     font-size:17px;
@@ -1243,7 +1245,7 @@ function buildPublicScheduleHtml(){
     overflow:hidden;
     margin-bottom:18px;
     padding:24px 26px;
-    border:1px solid rgba(144,211,90,.34);
+    border:1px solid rgba(110,160,85,.22);
     border-radius:26px;
     background:rgba(255,255,255,.86);
     box-shadow:var(--shadow);
@@ -1257,7 +1259,7 @@ function buildPublicScheduleHtml(){
     width:180px;
     height:180px;
     border-radius:50%;
-    background:rgba(144,211,90,.15);
+    background:rgba(110,160,85,.08);
     pointer-events:none;
   }
   .eyebrow{
@@ -1268,7 +1270,7 @@ function buildPublicScheduleHtml(){
     padding:5px 12px;
     border-radius:999px;
     background:var(--greenSoft);
-    border:1px solid rgba(144,211,90,.32);
+    border:1px solid rgba(110,160,85,.22);
     color:var(--greenDeep);
     font-size:13px;
     font-weight:950;
@@ -1325,7 +1327,7 @@ function buildPublicScheduleHtml(){
   }
   th{
     padding:14px 16px;
-    background:#F3FAEA;
+    background:#eff4ec;
     color:#6C7E5A;
     font-size:13px;
     font-weight:950;
@@ -1339,7 +1341,7 @@ function buildPublicScheduleHtml(){
   }
   tr:last-child td{border-bottom:none;}
   tbody tr{transition:background .15s ease;}
-  tbody tr:hover{background:#F6FBEF;}
+  tbody tr:hover{background:#f1f6ee;}
   .queue-no{width:72px;text-align:center;}
   .queue-no span{
     display:inline-flex;
@@ -1348,7 +1350,7 @@ function buildPublicScheduleHtml(){
     padding:4px 9px;
     border-radius:999px;
     background:var(--greenSoft);
-    border:1px solid rgba(144,211,90,.32);
+    border:1px solid rgba(110,160,85,.22);
     color:var(--greenDeep);
     font-size:13px;
     font-weight:950;
@@ -1365,11 +1367,11 @@ function buildPublicScheduleHtml(){
     justify-content:center;
     margin-right:10px;
     border-radius:13px;
-    background:linear-gradient(135deg, var(--green), var(--greenDark));
+    background:linear-gradient(135deg, var(--green2), var(--greenDark));
     color:#fff;
     font-size:16px;
     font-weight:950;
-    box-shadow:0 7px 16px rgba(111,175,62,.22);
+    box-shadow:0 6px 14px rgba(80,140,60,.14);
     vertical-align:middle;
   }
   .client-name{
@@ -1394,8 +1396,8 @@ function buildPublicScheduleHtml(){
     align-items:center;
     padding:6px 11px;
     border-radius:999px;
-    background:#EEF8DF;
-    border:1px solid rgba(144,211,90,.36);
+    background:var(--greenSoft);
+    border:1px solid rgba(110,160,85,.20);
     color:#59743F;
     font-size:15px;
     font-weight:900;
@@ -1431,10 +1433,10 @@ function buildPublicScheduleHtml(){
     color:#6D7C60;
   }
   .status-progress{
-    background:var(--green);
-    border-color:rgba(111,175,62,.42);
-    color:#fff;
-    box-shadow:0 6px 14px rgba(144,211,90,.24);
+    background:var(--greenSoft);
+    border-color:rgba(94,148,80,.30);
+    color:var(--greenDeep);
+    box-shadow:none;
   }
   .status-done{
     background:#E9F6DD;
@@ -1466,15 +1468,15 @@ function buildPublicScheduleHtml(){
     background:var(--greenSoft); list-style:none; transition:background .12s;
   }
   .week-summary::-webkit-details-marker{ display:none; }
-  .week-summary:hover{ background:#EAF6DE; }
+  .week-summary:hover{ background:#e8f2e4; }
   .week-label{ font-size:14px; font-weight:950; color:var(--greenDeep); letter-spacing:.3px; }
   .week-count{
     padding:3px 10px; border-radius:999px;
-    background:#EEF8DF; border:1px solid rgba(144,211,90,.34);
+    background:var(--greenSoft); border:1px solid rgba(110,160,85,.22);
     color:var(--greenDeep); font-size:12px; font-weight:900;
   }
   .week-arrow{ margin-left:auto; font-size:12px; color:var(--muted); transition:transform .15s ease; }
-  .week-details[open] .week-arrow{ transform:rotate(90deg); }
+  .week-details[open] .week-arrow{ transform:rotate(180deg); }
   .inner-table{ width:100%; border-collapse:separate; border-spacing:0; }
   .inner-table td{ border-bottom:1px solid var(--line); }
   .inner-table tr:last-child td{ border-bottom:none; }
@@ -1516,7 +1518,6 @@ function buildPublicScheduleHtml(){
               <th>項目</th>
               <th>開工</th>
               <th>DDL</th>
-              <th>備註</th>
               <th>狀態</th>
             </tr>
           </thead>
