@@ -252,22 +252,6 @@
       <p class="sub">圖片浮水印（正式/普通）＋ 文字浮水印（可存範本）。</p>
     </div>
 
-    <div class="wmbar" aria-label="圖片浮水印設定">
-      <div class="wmbar-head">
-        <div class="wmbar-title">浮水印版本 <span class="wmbar-sub">建議用透明 PNG</span></div>
-        <div class="row" style="gap:6px;">
-          <button id="clearBuiltin" type="button" class="mini danger">清除全部內建</button>
-        </div>
-      </div>
-      <!-- 版本 pill 列 -->
-      <div id="wmVersionBar" class="thumbs" style="margin-top:6px;min-height:38px;align-items:center;"></div>
-      <!-- 新增版本 -->
-      <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
-        <input id="wmFormalFile" type="file" accept="image/*" style="flex:1;min-width:180px;" />
-        <input id="wmVersionName" type="text" placeholder="版本名稱（例如：貓咪版）" style="flex:1;min-width:120px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);font-size:12px;font-family:inherit;" />
-        <button id="saveWmVersion" type="button" class="mini primary">儲存為版本</button>
-      </div>
-    </div>
   </div>
 
   <div class="grid">
@@ -304,9 +288,25 @@
         <div class="hint">可分次上傳，圖片會追加進清單。</div>
       </div>
 
-      <!-- 2. 圖片浮水印：位置 / 大小（摺疊，高優先級） -->
       <details class="section acc-priority" open>
-        <summary>2) 位置 / 大小</summary>
+        <summary>2) 浮水印設定</summary>
+        <div class="acc-body">
+      <div class="wmbar" aria-label="填色圖片浮水印">
+        <div class="wmbar-head">
+          <div class="wmbar-title">填色浮水印版本 <span class="wmbar-sub">建議用透明 PNG</span></div>
+          <button id="clearBuiltin" type="button" class="mini danger">清除全部內建</button>
+        </div>
+        <div id="wmVersionBar" class="thumbs" style="margin-top:6px;min-height:38px;align-items:center;"></div>
+        <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input id="wmFormalFile" type="file" accept="image/*" style="flex:1;min-width:180px;" />
+          <input id="wmVersionName" type="text" placeholder="版本名稱（例如：貓咪版）" style="flex:1;min-width:120px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);font-size:12px;font-family:inherit;" />
+          <button id="saveWmVersion" type="button" class="mini primary">儲存為版本</button>
+        </div>
+      </div>
+
+      <!-- 填色圖片浮水印：位置 / 大小 -->
+      <details class="section acc-priority" open>
+        <summary>填色浮水印：位置 / 大小</summary>
         <div class="acc-body">
           <div class="kv">
             <label>九宮格</label>
@@ -377,6 +377,12 @@
           <input id="colorImageWmScale" type="range" min="3" max="80" value="18" />
           <label>不透明度</label>
           <input id="colorImageWmOpacity" type="range" min="0" max="100" value="100" />
+          <label>手動調整位置</label>
+          <div class="row" style="gap:8px;">
+            <input id="colorImageWmDragEnable" type="checkbox" />
+            <span style="font-size:12px;color:var(--muted);">勾選後可直接拖曳預覽中的圖片</span>
+            <button id="colorImageWmReset" class="mini ghost" type="button">重置位置</button>
+          </div>
         </div>
         <div id="colorImageWmName" class="hint">可上傳彩色 PNG/JPG；會保留圖片原本顏色，且可和上方填色浮水印一起使用。</div>
       </section>
@@ -450,6 +456,9 @@
             </div>
             <div class="hint">範本會記住：文字、字型、大小、顏色、不透明度、描邊、位置、邊距。</div>
           </div>
+        </div>
+      </details>
+
         </div>
       </details>
 
@@ -689,6 +698,7 @@ const colorImageWmScaleEl=document.getElementById('colorImageWmScale');
 const colorImageWmOpacityEl=document.getElementById('colorImageWmOpacity');
 const colorImageWmPosEl=document.getElementById('colorImageWmPos');
 const colorImageWmNameEl=document.getElementById('colorImageWmName');
+const colorImageWmDragEnableEl=document.getElementById('colorImageWmDragEnable');
 const thumbsEl=document.getElementById('thumbs');
 const statusEl=document.getElementById('status');
 const clearBuiltinBtn=document.getElementById('clearBuiltin');
@@ -732,6 +742,8 @@ let baseItems=[]; let activeIndex=0;
 let formalColor='#111111';
 let colorImageWmImg=null;
 let drag={isDown:false,x:0,y:0,ox:0,oy:0,hasManual:false};
+let colorImageWmDrag={isDown:false,x:0,y:0,ox:0,oy:0,hasManual:false};
+let dragTarget=null;
 initSwatches();
 
 /* ── Per-image settings ── */
@@ -825,12 +837,13 @@ colorImageWmFileEl.addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f)return;
   try{
     colorImageWmImg=await fileToImage(f);
+    colorImageWmDrag.hasManual=false;
     colorImageWmNameEl.textContent=`已載入：${f.name}（保留原色）`;
     setStatus('已載入彩色圖片浮水印，可和填色浮水印同時使用。'); draw();
   }catch{setStatus('彩色圖片浮水印載入失敗，請確認圖片檔案正常。');}
 });
 document.getElementById('clearColorImageWm').addEventListener('click',()=>{
-  colorImageWmImg=null; colorImageWmFileEl.value='';
+  colorImageWmImg=null; colorImageWmDrag.hasManual=false; colorImageWmFileEl.value='';
   colorImageWmNameEl.textContent='可上傳彩色 PNG/JPG；會保留圖片原本顏色，且可和上方填色浮水印一起使用。';
   draw(); setStatus('已移除彩色圖片浮水印。');
 });
@@ -901,11 +914,18 @@ function fitCanvasToImage(){
 }
 fitBtn.addEventListener('click',()=>{fitCanvasToImage();draw();});
 centerBtn.addEventListener('click',()=>{
-  const wm=wmFormalImg; if(!wm)return;
-  drag.hasManual=true;
-  const wmW=(Number(wmScaleEl.value)/100)*canvas.width; const wmH=(wm.height/wm.width)*wmW;
-  drag.x=(canvas.width-wmW)/2; drag.y=(canvas.height-wmH)/2;
-  saveCurrentItemSettings(); draw();
+  let centered=false;
+  if(wmFormalImg){
+    drag.hasManual=true;
+    const wmW=(Number(wmScaleEl.value)/100)*canvas.width; const wmH=(wmFormalImg.height/wmFormalImg.width)*wmW;
+    drag.x=(canvas.width-wmW)/2; drag.y=(canvas.height-wmH)/2; centered=true;
+  }
+  if(colorImageWmImg){
+    colorImageWmDrag.hasManual=true;
+    const wmW=(Number(colorImageWmScaleEl.value)/100)*canvas.width; const wmH=(colorImageWmImg.height/colorImageWmImg.width)*wmW;
+    colorImageWmDrag.x=(canvas.width-wmW)/2; colorImageWmDrag.y=(canvas.height-wmH)/2; centered=true;
+  }
+  if(centered){saveCurrentItemSettings();draw();}
 });
 
 /* ── Drag ── */
@@ -920,21 +940,44 @@ function computeWmRect(){
   pos.x=clamp(pos.x,margin,canvas.width-wmW-margin); pos.y=clamp(pos.y,margin,canvas.height-wmH-margin);
   res.wmRect={x:pos.x,y:pos.y,w:wmW,h:wmH}; return res;
 }
+function computeColorImageWmRect(canvasW=canvas.width,canvasH=canvas.height){
+  const img=colorImageWmImg; if(!img)return null;
+  const wmW=Number(colorImageWmScaleEl.value)/100*canvasW, wmH=img.height/img.width*wmW;
+  const margin=Number(marginEl.value||0);
+  let pos=colorImageWmDrag.hasManual
+    ?{x:colorImageWmDrag.x*canvasW/canvas.width,y:colorImageWmDrag.y*canvasH/canvas.height}
+    :getGridPos(canvasW,canvasH,wmW,wmH,colorImageWmPosEl.value,margin);
+  pos.x=clamp(pos.x,margin,canvasW-wmW-margin); pos.y=clamp(pos.y,margin,canvasH-wmH-margin);
+  return{x:pos.x,y:pos.y,w:wmW,h:wmH};
+}
 canvas.addEventListener('pointerdown',(e)=>{
-  if(!dragEnableEl.checked||!wmFormalImg)return;
-  const{wmRect}=computeWmRect(); const p=getMousePos(e);
-  if(p.x>=wmRect.x&&p.x<=wmRect.x+wmRect.w&&p.y>=wmRect.y&&p.y<=wmRect.y+wmRect.h){
-    drag.isDown=true;drag.hasManual=true;drag.ox=p.x-wmRect.x;drag.oy=p.y-wmRect.y;canvas.setPointerCapture(e.pointerId);
+  const p=getMousePos(e);
+  const colorRect=colorImageWmDragEnableEl.checked?computeColorImageWmRect():null;
+  if(colorRect&&p.x>=colorRect.x&&p.x<=colorRect.x+colorRect.w&&p.y>=colorRect.y&&p.y<=colorRect.y+colorRect.h){
+    dragTarget='color'; colorImageWmDrag.isDown=true;colorImageWmDrag.hasManual=true;
+    colorImageWmDrag.ox=p.x-colorRect.x;colorImageWmDrag.oy=p.y-colorRect.y;canvas.setPointerCapture(e.pointerId);return;
+  }
+  if(dragEnableEl.checked&&wmFormalImg){
+    const{wmRect}=computeWmRect();
+    if(p.x>=wmRect.x&&p.x<=wmRect.x+wmRect.w&&p.y>=wmRect.y&&p.y<=wmRect.y+wmRect.h){
+      dragTarget='formal';drag.isDown=true;drag.hasManual=true;drag.ox=p.x-wmRect.x;drag.oy=p.y-wmRect.y;canvas.setPointerCapture(e.pointerId);
+    }
   }
 });
 canvas.addEventListener('pointermove',(e)=>{
-  if(!drag.isDown)return;
-  const p=getMousePos(e); const{wmRect}=computeWmRect(); const m=Number(marginEl.value||0);
-  drag.x=clamp(p.x-drag.ox,m,canvas.width-wmRect.w-m); drag.y=clamp(p.y-drag.oy,m,canvas.height-wmRect.h-m);
-  saveCurrentItemSettings(); draw();
+  if(dragTarget==='color'&&colorImageWmDrag.isDown){
+    const p=getMousePos(e),rect=computeColorImageWmRect(),m=Number(marginEl.value||0);
+    colorImageWmDrag.x=clamp(p.x-colorImageWmDrag.ox,m,canvas.width-rect.w-m);
+    colorImageWmDrag.y=clamp(p.y-colorImageWmDrag.oy,m,canvas.height-rect.h-m);draw();return;
+  }
+  if(dragTarget==='formal'&&drag.isDown){
+    const p=getMousePos(e); const{wmRect}=computeWmRect(); const m=Number(marginEl.value||0);
+    drag.x=clamp(p.x-drag.ox,m,canvas.width-wmRect.w-m); drag.y=clamp(p.y-drag.oy,m,canvas.height-wmRect.h-m);
+    saveCurrentItemSettings(); draw();
+  }
 });
-canvas.addEventListener('pointerup',(e)=>{drag.isDown=false;try{canvas.releasePointerCapture(e.pointerId);}catch{}});
-canvas.addEventListener('pointercancel',()=>{drag.isDown=false;});
+canvas.addEventListener('pointerup',(e)=>{drag.isDown=false;colorImageWmDrag.isDown=false;dragTarget=null;try{canvas.releasePointerCapture(e.pointerId);}catch{}});
+canvas.addEventListener('pointercancel',()=>{drag.isDown=false;colorImageWmDrag.isDown=false;dragTarget=null;});
 
 /* ── WM rendering ── */
 function tintImageToCanvas(img,colorHex,alpha=1){
@@ -1011,16 +1054,16 @@ function draw(){
 
 function drawColorImageWatermark(outCtx,canvasW,canvasH,img){
   if(!img)return;
-  const wmW=Number(colorImageWmScaleEl.value)/100*canvasW;
-  const wmH=img.height/img.width*wmW;
-  const margin=Number(marginEl.value||0);
-  const pos=getGridPos(canvasW,canvasH,wmW,wmH,colorImageWmPosEl.value,margin);
+  const rect=computeColorImageWmRect(canvasW,canvasH);
   outCtx.globalAlpha=Number(colorImageWmOpacityEl.value)/100;
-  outCtx.drawImage(img,pos.x,pos.y,wmW,wmH);
+  outCtx.drawImage(img,rect.x,rect.y,rect.w,rect.h);
   outCtx.globalAlpha=1;
 }
 
-[colorImageWmScaleEl,colorImageWmOpacityEl,colorImageWmPosEl,marginEl].forEach(el=>el.addEventListener('input',draw));
+[colorImageWmScaleEl,colorImageWmOpacityEl,marginEl].forEach(el=>el.addEventListener('input',draw));
+colorImageWmPosEl.addEventListener('input',()=>{colorImageWmDrag.hasManual=false;draw();});
+document.getElementById('colorImageWmReset').addEventListener('click',()=>{colorImageWmDrag.hasManual=false;draw();});
+colorImageWmDragEnableEl.addEventListener('input',()=>{canvas.style.cursor=colorImageWmDragEnableEl.checked?'grab':'';});
 
 /* ── Control events ── */
 [posGridEl,marginEl,dragEnableEl,wmScaleEl,wmOpacityEl,strokeEnableEl,strokeWidthEl,strokeColorEl,strokeOpacityEl,
