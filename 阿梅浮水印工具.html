@@ -358,6 +358,29 @@
         </div>
       </details>
 
+      <!-- 彩色圖片浮水印：保留原圖色彩，並可與填色浮水印同時使用 -->
+      <section class="section acc-secondary">
+        <div class="title">彩色圖片浮水印（保留原色）</div>
+        <div class="kv">
+          <label>上傳圖片</label>
+          <div class="row">
+            <input id="colorImageWmFile" type="file" accept="image/*" />
+            <button id="clearColorImageWm" class="mini danger" type="button">移除</button>
+          </div>
+          <label>九宮格位置</label>
+          <select id="colorImageWmPos">
+            <option value="TL">左上</option><option value="TC">上中</option><option value="TR">右上</option>
+            <option value="CL">左中</option><option value="CC">正中</option><option value="CR">右中</option>
+            <option value="BL">左下</option><option value="BC">下中</option><option value="BR" selected>右下</option>
+          </select>
+          <label>圖片寬度（%）</label>
+          <input id="colorImageWmScale" type="range" min="3" max="80" value="18" />
+          <label>不透明度</label>
+          <input id="colorImageWmOpacity" type="range" min="0" max="100" value="100" />
+        </div>
+        <div id="colorImageWmName" class="hint">可上傳彩色 PNG/JPG；會保留圖片原本顏色，且可和上方填色浮水印一起使用。</div>
+      </section>
+
       <!-- 4. 文字浮水印（摺疊，附加功能） -->
       <details class="text-wm-section acc-text" style="padding:0;">
         <summary class="text-wm-summary">
@@ -661,6 +684,11 @@ const ctx=canvas.getContext('2d');
 const baseFilesEl=document.getElementById('baseFiles');
 const clearBaseListBtn=document.getElementById('clearBaseList');
 const wmFormalFileEl=document.getElementById('wmFormalFile');
+const colorImageWmFileEl=document.getElementById('colorImageWmFile');
+const colorImageWmScaleEl=document.getElementById('colorImageWmScale');
+const colorImageWmOpacityEl=document.getElementById('colorImageWmOpacity');
+const colorImageWmPosEl=document.getElementById('colorImageWmPos');
+const colorImageWmNameEl=document.getElementById('colorImageWmName');
 const thumbsEl=document.getElementById('thumbs');
 const statusEl=document.getElementById('status');
 const clearBuiltinBtn=document.getElementById('clearBuiltin');
@@ -702,6 +730,7 @@ function initSwatches(){
 /* ── State ── */
 let baseItems=[]; let activeIndex=0;
 let formalColor='#111111';
+let colorImageWmImg=null;
 let drag={isDown:false,x:0,y:0,ox:0,oy:0,hasManual:false};
 initSwatches();
 
@@ -789,6 +818,21 @@ wmFormalFileEl.addEventListener('change', async (e)=>{
   activeWmVersionIndex = -1; // 不選任何版本，視為「臨時」
   renderWmVersionBar();
   setStatus('已載入浮水印（臨時，未存版本）。'); draw();
+});
+
+// 彩色圖片浮水印直接繪製原圖，不套用上色遮罩。
+colorImageWmFileEl.addEventListener('change', async (e)=>{
+  const f=e.target.files?.[0]; if(!f)return;
+  try{
+    colorImageWmImg=await fileToImage(f);
+    colorImageWmNameEl.textContent=`已載入：${f.name}（保留原色）`;
+    setStatus('已載入彩色圖片浮水印，可和填色浮水印同時使用。'); draw();
+  }catch{setStatus('彩色圖片浮水印載入失敗，請確認圖片檔案正常。');}
+});
+document.getElementById('clearColorImageWm').addEventListener('click',()=>{
+  colorImageWmImg=null; colorImageWmFileEl.value='';
+  colorImageWmNameEl.textContent='可上傳彩色 PNG/JPG；會保留圖片原本顏色，且可和上方填色浮水印一起使用。';
+  draw(); setStatus('已移除彩色圖片浮水印。');
 });
 
 /* ── 清除全部版本 ── */
@@ -957,11 +1001,26 @@ function draw(){
     ctx.globalAlpha=opacity; ctx.drawImage(tinted,wmRect.x,wmRect.y,wmRect.w,wmRect.h); ctx.globalAlpha=1;
   }
 
+  drawColorImageWatermark(ctx,canvas.width,canvas.height,colorImageWmImg);
+
   // 文字浮水印
   if(textWmEnableEl.checked){
     drawTextWatermark(ctx,canvas.width,canvas.height,getTextWmSettings());
   }
 }
+
+function drawColorImageWatermark(outCtx,canvasW,canvasH,img){
+  if(!img)return;
+  const wmW=Number(colorImageWmScaleEl.value)/100*canvasW;
+  const wmH=img.height/img.width*wmW;
+  const margin=Number(marginEl.value||0);
+  const pos=getGridPos(canvasW,canvasH,wmW,wmH,colorImageWmPosEl.value,margin);
+  outCtx.globalAlpha=Number(colorImageWmOpacityEl.value)/100;
+  outCtx.drawImage(img,pos.x,pos.y,wmW,wmH);
+  outCtx.globalAlpha=1;
+}
+
+[colorImageWmScaleEl,colorImageWmOpacityEl,colorImageWmPosEl,marginEl].forEach(el=>el.addEventListener('input',draw));
 
 /* ── Control events ── */
 [posGridEl,marginEl,dragEnableEl,wmScaleEl,wmOpacityEl,strokeEnableEl,strokeWidthEl,strokeColorEl,strokeOpacityEl,
@@ -1022,7 +1081,7 @@ function getCompressSettings(){
   return{ enabled, maxBytes: Math.max(0.5,maxMB)*1024*1024 };
 }
 
-function renderFullSize(baseImg,wmImg,opts,textWmOpts){
+function renderFullSize(baseImg,wmImg,opts,textWmOpts,colorImageWmImg){
   const out=document.createElement('canvas'); out.width=baseImg.width; out.height=baseImg.height;
   const octx=out.getContext('2d'); octx.drawImage(baseImg,0,0,out.width,out.height);
 
@@ -1045,6 +1104,8 @@ function renderFullSize(baseImg,wmImg,opts,textWmOpts){
     }
     octx.globalAlpha=opacity; octx.drawImage(tinted,x,y,wmW,wmH); octx.globalAlpha=1;
   }
+
+  drawColorImageWatermark(octx,out.width,out.height,colorImageWmImg);
 
   // 文字浮水印（以原圖尺寸等比例縮放字型大小）
   if(textWmOpts && textWmOpts.enabled && textWmOpts.content.trim()){
@@ -1084,10 +1145,10 @@ downloadOneBtn.addEventListener('click', async ()=>{
   const item=baseItems[activeIndex]; if(!item){setStatus('沒有原圖。');return;}
   saveCurrentItemSettings(); const s=item.settings||getUISettings();
   const wm=wmFormalImg;
-  if(!wm&&!textWmEnableEl.checked){setStatus('沒有浮水印（圖片或文字擇一）。');return;}
+  if(!wm&&!colorImageWmImg&&!textWmEnableEl.checked){setStatus('沒有浮水印（圖片或文字擇一）。');return;}
   const opts=buildDownloadOpts(s);
   const twmOpts=buildTextWmOpts();
-  const out=renderFullSize(item.img,wm,opts,twmOpts);
+  const out=renderFullSize(item.img,wm,opts,twmOpts,colorImageWmImg);
   const nameBase=item.file?.name?item.file.name.replace(/\.[^.]+$/,''):`image_${activeIndex+1}`;
 
   const cmp=getCompressSettings();
@@ -1116,9 +1177,9 @@ downloadAllBtn.addEventListener('click', async ()=>{
       const it=baseItems[i];
       const s=it.settings||getUISettings();
       const wm=wmFormalImg;
-      if(!wm&&!twmOpts.enabled)continue;
+      if(!wm&&!colorImageWmImg&&!twmOpts.enabled)continue;
       const opts=buildDownloadOpts(s);
-      const out=renderFullSize(it.img,wm,opts,twmOpts);
+      const out=renderFullSize(it.img,wm,opts,twmOpts,colorImageWmImg);
       const nameBase=it.file?.name?it.file.name.replace(/\.[^.]+$/,''):`image_${i+1}`;
       const filename='watermarked_'+String(i+1).padStart(2,'0')+'_'+nameBase+'.jpg';
 
