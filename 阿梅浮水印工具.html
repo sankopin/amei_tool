@@ -361,6 +361,12 @@
       <!-- 彩色圖片浮水印：保留原圖色彩，並可與填色浮水印同時使用 -->
       <section class="section acc-secondary">
         <div class="title">彩色圖片浮水印（保留原色）</div>
+        <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:6px;">已存範本</div>
+        <div id="colorImageWmPresetBar" class="preset-bar" style="margin-bottom:8px;"><span class="no-presets">尚無範本</span></div>
+        <div class="row" style="gap:8px;margin-bottom:8px;">
+          <input id="colorImageWmPresetName" type="text" class="text-input" placeholder="範本名稱（例如：彩色簽名）" style="flex:1;min-width:120px;" />
+          <button id="saveColorImageWmPreset" type="button" class="accent mini">儲存範本</button>
+        </div>
         <div class="kv">
           <label>上傳圖片</label>
           <div class="row">
@@ -521,12 +527,20 @@ function fileToImage(file){ return new Promise((resolve,reject)=>{ const url=URL
 
 /* ── Built-in WM（多版本） ── */
 const BUILTIN_WM_VERSIONS_KEY = 'ame_builtin_wm_versions_v1';
+const COLOR_IMAGE_WM_PRESETS_KEY = 'ame_color_image_wm_presets_v1';
 
 function loadWmVersions(){
   try{ return JSON.parse(localStorage.getItem(BUILTIN_WM_VERSIONS_KEY)||'[]'); }catch{ return []; }
 }
 function saveWmVersions(arr){
   try{ localStorage.setItem(BUILTIN_WM_VERSIONS_KEY, JSON.stringify(arr)); }catch{ setStatus('儲存失敗：版本圖片可能太大。'); }
+}
+function loadColorImageWmPresets(){
+  try{return JSON.parse(localStorage.getItem(COLOR_IMAGE_WM_PRESETS_KEY)||'[]');}catch{return [];}
+}
+function saveColorImageWmPresets(arr){
+  try{localStorage.setItem(COLOR_IMAGE_WM_PRESETS_KEY,JSON.stringify(arr));return true;}
+  catch{setStatus('範本儲存失敗：瀏覽器儲存空間可能不足，請改用較小的圖片。');return false;}
 }
 
 // 目前使用中的浮水印 Image 物件（由版本列切換決定）
@@ -572,6 +586,46 @@ function renderWmVersionBar(){
       renderWmVersionBar();
     });
     wrap.appendChild(btn); wrap.appendChild(del); bar.appendChild(wrap);
+  });
+}
+
+function renderColorImageWmPresetBar(){
+  const bar=document.getElementById('colorImageWmPresetBar'); if(!bar)return;
+  const presets=loadColorImageWmPresets(); bar.innerHTML='';
+  if(!presets.length){const hint=document.createElement('span');hint.className='no-presets';hint.textContent='尚無範本';bar.appendChild(hint);return;}
+  presets.forEach((preset,i)=>{
+    const wrap=document.createElement('div');wrap.className='pillwrap';
+    const btn=document.createElement('button');btn.type='button';
+    btn.className='pillbtn'+(i===activeColorImageWmPresetIndex?' active':'');btn.textContent=preset.name;
+    btn.addEventListener('click',async()=>{
+      if(activeColorImageWmPresetIndex===i){
+        activeColorImageWmPresetIndex=-1;colorImageWmImg=null;colorImageWmDrag.hasManual=false;
+        colorImageWmNameEl.textContent='已取消選取彩色圖片範本。';
+        setStatus('已取消選取彩色圖片浮水印範本。');
+      }else{
+        try{
+          colorImageWmImg=await dataURLToImage(preset.dataURL);activeColorImageWmPresetIndex=i;
+          if(Number.isFinite(preset.scale))colorImageWmScaleEl.value=preset.scale;
+          if(Number.isFinite(preset.opacity))colorImageWmOpacityEl.value=preset.opacity;
+          if(preset.pos)colorImageWmPosEl.value=preset.pos;
+          colorImageWmDrag.hasManual=!!preset.manual?.enabled;
+          colorImageWmDrag.x=(preset.manual?.xPct||0)*canvas.width;
+          colorImageWmDrag.y=(preset.manual?.yPct||0)*canvas.height;
+          colorImageWmDragEnableEl.checked=!!preset.dragEnabled;
+          colorImageWmNameEl.textContent=`已載入範本：${preset.name}（保留原色）`;
+          setStatus(`已載入彩色圖片範本「${preset.name}」。`);
+        }catch{colorImageWmImg=null;setStatus(`範本「${preset.name}」載入失敗。`);}
+      }
+      renderColorImageWmPresetBar();draw();
+    });
+    const del=document.createElement('button');del.type='button';del.className='pilldel';del.title='刪除此範本';del.textContent='×';
+    del.addEventListener('click',(e)=>{
+      e.stopPropagation();const arr=loadColorImageWmPresets();arr.splice(i,1);saveColorImageWmPresets(arr);
+      if(activeColorImageWmPresetIndex===i){activeColorImageWmPresetIndex=-1;colorImageWmImg=null;colorImageWmDrag.hasManual=false;}
+      else if(activeColorImageWmPresetIndex>i)activeColorImageWmPresetIndex--;
+      renderColorImageWmPresetBar();draw();setStatus(`已刪除彩色圖片範本「${preset.name}」。`);
+    });
+    wrap.append(btn,del);bar.appendChild(wrap);
   });
 }
 
@@ -837,15 +891,39 @@ colorImageWmFileEl.addEventListener('change', async (e)=>{
   const f=e.target.files?.[0]; if(!f)return;
   try{
     colorImageWmImg=await fileToImage(f);
+    activeColorImageWmPresetIndex=-1;
     colorImageWmDrag.hasManual=false;
     colorImageWmNameEl.textContent=`已載入：${f.name}（保留原色）`;
+    renderColorImageWmPresetBar();
     setStatus('已載入彩色圖片浮水印，可和填色浮水印同時使用。'); draw();
   }catch{setStatus('彩色圖片浮水印載入失敗，請確認圖片檔案正常。');}
 });
+
+document.getElementById('saveColorImageWmPreset').addEventListener('click',()=>{
+  if(!colorImageWmImg){setStatus('請先上傳彩色圖片浮水印，再儲存範本。');return;}
+  const name=(document.getElementById('colorImageWmPresetName').value||'').trim();
+  if(!name){setStatus('請輸入彩色圖片範本名稱。');return;}
+  const dataURL=imageToDataURL(colorImageWmImg);
+  const presets=loadColorImageWmPresets();
+  const entry={
+    name,dataURL,
+    scale:Number(colorImageWmScaleEl.value),opacity:Number(colorImageWmOpacityEl.value),
+    pos:colorImageWmPosEl.value,dragEnabled:!!colorImageWmDragEnableEl.checked,
+    manual:{enabled:!!colorImageWmDrag.hasManual,xPct:canvas.width?colorImageWmDrag.x/canvas.width:0,yPct:canvas.height?colorImageWmDrag.y/canvas.height:0}
+  };
+  const existing=presets.findIndex(p=>p.name===name);
+  if(existing>=0)presets[existing]=entry;else presets.push(entry);
+  if(!saveColorImageWmPresets(presets))return;
+  activeColorImageWmPresetIndex=presets.findIndex(p=>p.name===name);
+  renderColorImageWmPresetBar();
+  document.getElementById('colorImageWmPresetName').value='';
+  colorImageWmNameEl.textContent=`範本「${name}」已儲存並套用。`;
+  setStatus(`彩色圖片範本「${name}」已儲存並套用 ✅`);
+});
 document.getElementById('clearColorImageWm').addEventListener('click',()=>{
-  colorImageWmImg=null; colorImageWmDrag.hasManual=false; colorImageWmFileEl.value='';
+  colorImageWmImg=null; activeColorImageWmPresetIndex=-1; colorImageWmDrag.hasManual=false; colorImageWmFileEl.value='';
   colorImageWmNameEl.textContent='可上傳彩色 PNG/JPG；會保留圖片原本顏色，且可和上方填色浮水印一起使用。';
-  draw(); setStatus('已移除彩色圖片浮水印。');
+  renderColorImageWmPresetBar();draw(); setStatus('已移除彩色圖片浮水印。');
 });
 
 /* ── 清除全部版本 ── */
@@ -1242,6 +1320,7 @@ downloadAllBtn.addEventListener('click', async ()=>{
 /* ── Init ── */
 tryLoadBuiltinWatermarks();
 renderWmVersionBar();
+renderColorImageWmPresetBar();
 renderPresetBar();
 draw();
 </script>
