@@ -1157,7 +1157,6 @@ function buildPublicScheduleHtml(){
     const item = escapeHtml(r.item || "未填項目");
     const start = shortDate(r.start);
     const ddl = shortDate(r.ddl);
-    const note = escapeHtml((r.note || "").trim() || "—");
     const status = publicStatus(r);
     return `
       <tr>
@@ -1169,14 +1168,13 @@ function buildPublicScheduleHtml(){
         <td class="item-cell">${item}</td>
         <td class="date-cell"><span>${escapeHtml(start)}</span></td>
         <td class="date-cell"><span>${escapeHtml(ddl)}</span></td>
-        <td class="note-cell">${note}</td>
         <td class="status-cell"><span class="status-pill ${status.cls}">${status.icon} ${status.text}</span></td>
       </tr>`;
   }
 
   const tableRowsHtml = (() => {
     if(!rows.length) return `
-      <tr><td colspan="7" class="empty-cell">
+      <tr><td colspan="6" class="empty-cell">
         <div class="empty-icon">☁️</div>
         <div class="empty-title">目前沒有公開排單中的委託</div>
         <div class="empty-text">等排單更新後會顯示在這裡。</div>
@@ -1188,7 +1186,7 @@ function buildPublicScheduleHtml(){
         const rowsHtml = items.map(({r, idx}) => makeRowHtml(r, idx)).join("");
         return `
           <tr class="week-group-row">
-            <td colspan="7" class="week-group-cell">
+            <td colspan="6" class="week-group-cell">
               <details class="week-details" ${g.open ? "open" : ""}>
                 <summary class="week-summary">
                   <span class="week-label">${g.label}</span>
@@ -1314,7 +1312,7 @@ function buildPublicScheduleHtml(){
   .table-scroll{overflow-x:auto;}
   table{
     width:100%;
-    min-width:900px;
+    min-width:760px;
     border-collapse:separate;
     border-spacing:0;
   }
@@ -1399,15 +1397,6 @@ function buildPublicScheduleHtml(){
     color:#59743F;
     font-size:15px;
     font-weight:900;
-  }
-  .note-cell{
-    min-width:220px;
-    white-space:pre-wrap;
-    word-break:break-word;
-    color:#607056;
-    font-size:15px;
-    font-weight:700;
-    line-height:1.65;
   }
   .status-cell{
     width:132px;
@@ -1516,7 +1505,6 @@ function buildPublicScheduleHtml(){
               <th>項目</th>
               <th>開工</th>
               <th>DDL</th>
-              <th>備註</th>
               <th>狀態</th>
             </tr>
           </thead>
